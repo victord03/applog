@@ -5,9 +5,11 @@
 # **Steps**
 
 1. Create a simple UI
-   - Modern, minimal interface in a white and beige color palette with dark grey text, and ideally a dark mode in dark brown, light brown and grey text.
-   - Prepare fields. 
-      - Search (main field, across the screen)
+   - [x] Modern, minimal interface in a white and beige color palette with dark grey text, and ideally a dark mode in dark brown, light brown and grey text.
+   - [x] Prepare fields. 
+      - [x] Search (main field, across the screen)
+      - Add an optional field to store an apartment offer link. Be able to add as many links as possible ('+ Add link' field on the UI)
+      - Add the option to also filter by location in the search bar.
    - Filters 
      - Filter per company, per area, per status
 2. Create the main software. The idea is to (initially) manually insert a link to a job offering to log it.
@@ -16,6 +18,7 @@
      - Capture created date
      - Automatically add "Applied" status (probably)
      - Store it to the database (more features will probably be added in this section)
+     - Track the region of each job listing in order to align with apartment renting.
    - Database
      - Simple LiteSQL database (probably, or MongoDB).
      - Store application data (extract keywords, company name, source website and more)
@@ -31,21 +34,6 @@
 - Job listing is manually inserted to the web interface
 - Information is collected, scrubbed (if needed), serialized and stored
 
-```
-from dataclasses import dataclass, field
-from datetime import datetime
-
-class TestingSyntax:
-    id: int
-    timestamp: datetime = field(factory_default=datetime.now)
-
-
-    def write_to_md() -> str:
-        return "Testing code syntax inside the md file"
-
-```
-
----
 
 # **Project Architecture**
 

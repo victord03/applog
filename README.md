@@ -14,13 +14,16 @@
      - Filter per company, per area, per status
 2. Create the main software. The idea is to (initially) manually insert a link to a job offering to log it.
    - Logging system
-     - Check for duplication (reject if already existing)
-     - Capture created date
-     - Automatically add "Applied" status (probably)
-     - Store it to the database (more features will probably be added in this section)
+     - [x] Check for duplication (reject if already existing)
+     - [x] Capture created date
+     - [x] Automatically add "Applied" status (probably)
+     - [x] Store it to the database (more features will probably be added in this section)
+     - [x] Validation logic (validate fields to ensure that data updates either pass or fail; no partial updates)
+     - Explicitly track job_url field missing and not only rely on SQLAlchemy (NOT NULL)
      - Track the region of each job listing in order to align with apartment renting.
    - Database
-     - Simple LiteSQL database (probably, or MongoDB).
+     - [x] Simple LiteSQL database (probably, or MongoDB).
+     - Convert the "salary range" field which is currently a string to a tuple(int, int)
      - Store application data (extract keywords, company name, source website and more)
      - Later on I may choose to create a second database that will be holding company info.
 3. Other services

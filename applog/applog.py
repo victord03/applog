@@ -69,14 +69,17 @@ class State(rx.State):
         # Apply search filter
         if self.search_query:
             result = [
-                job for job in result
+                job
+                for job in result
                 if self.search_query.lower() in job["company_name"].lower()
                 or self.search_query.lower() in job["job_title"].lower()
             ]
 
         # Apply company filter
         if self.selected_company != "All Companies":
-            result = [job for job in result if job["company_name"] == self.selected_company]
+            result = [
+                job for job in result if job["company_name"] == self.selected_company
+            ]
 
         # Apply status filter
         if self.selected_status != "All Statuses":
@@ -84,14 +87,18 @@ class State(rx.State):
 
         # Apply location filter
         if self.selected_location != "All Locations":
-            result = [job for job in result if job["location"] == self.selected_location]
+            result = [
+                job for job in result if job["location"] == self.selected_location
+            ]
 
         return result
 
     @rx.var
     def unique_companies(self) -> List[str]:
         """Get unique company names."""
-        return ["All Companies"] + sorted(list(set(job["company_name"] for job in self.jobs)))
+        return ["All Companies"] + sorted(
+            list(set(job["company_name"] for job in self.jobs))
+        )
 
     @rx.var
     def unique_statuses(self) -> List[str]:
@@ -101,7 +108,9 @@ class State(rx.State):
     @rx.var
     def unique_locations(self) -> List[str]:
         """Get unique locations."""
-        return ["All Locations"] + sorted(list(set(job["location"] for job in self.jobs)))
+        return ["All Locations"] + sorted(
+            list(set(job["location"] for job in self.jobs))
+        )
 
 
 def status_badge(status: str) -> rx.Component:
@@ -137,7 +146,9 @@ def job_card(job: Dict) -> rx.Component:
             ),
             rx.cond(
                 job.get("salary_range"),
-                rx.text(f"💰 {job['salary_range']}", size="2", color="#666", weight="medium"),
+                rx.text(
+                    f"💰 {job['salary_range']}", size="2", color="#666", weight="medium"
+                ),
             ),
             rx.cond(
                 job.get("notes"),
@@ -173,7 +184,6 @@ def filter_sidebar() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.heading("Filters", size="4", margin_bottom="1em"),
-
             # Company filter
             rx.vstack(
                 rx.text("Company", weight="bold", size="2"),
@@ -187,7 +197,6 @@ def filter_sidebar() -> rx.Component:
                 align_items="start",
                 width="100%",
             ),
-
             # Status filter
             rx.vstack(
                 rx.text("Status", weight="bold", size="2"),
@@ -201,7 +210,6 @@ def filter_sidebar() -> rx.Component:
                 align_items="start",
                 width="100%",
             ),
-
             # Location filter
             rx.vstack(
                 rx.text("Location", weight="bold", size="2"),
@@ -215,7 +223,6 @@ def filter_sidebar() -> rx.Component:
                 align_items="start",
                 width="100%",
             ),
-
             spacing="4",
             align_items="start",
             width="100%",
@@ -248,10 +255,8 @@ def index() -> rx.Component:
             # Header
             rx.heading("AppLog", size="8", margin_bottom="0.5em"),
             rx.text("Track your job applications", color="#666", margin_bottom="2em"),
-
             # Search bar
             search_bar(),
-
             # Main content area with filters and job list
             rx.hstack(
                 filter_sidebar(),
@@ -261,7 +266,6 @@ def index() -> rx.Component:
                 width="100%",
                 margin_top="2em",
             ),
-
             spacing="4",
             padding="2em",
             max_width="1400px",

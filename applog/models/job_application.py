@@ -8,6 +8,7 @@ from applog.database import Base
 
 class ApplicationStatus(str, Enum):
     """Status enum for job applications."""
+
     APPLIED = "Applied"
     SCREENING = "Screening"
     INTERVIEW = "Interview"
@@ -39,7 +40,9 @@ class JobApplication(Base):
     salary_range = Column(String(100))
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
+    )
 
     def __repr__(self):
         return f"<JobApplication(id={self.id}, company='{self.company_name}', title='{self.job_title}', status='{self.status.value}')>"
@@ -54,7 +57,9 @@ class JobApplication(Base):
             "location": self.location,
             "description": self.description,
             "status": self.status.value,
-            "application_date": self.application_date.isoformat() if self.application_date else None,
+            "application_date": self.application_date.isoformat()
+            if self.application_date
+            else None,
             "salary_range": self.salary_range,
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,

@@ -57,6 +57,13 @@ def sample_job_updates() -> dict:
         "salary_range": "CHF 72k - CHF 77k",
     }
 
+@pytest.fixture
+def sample_partial_updates() -> dict:
+    return {
+        "job_title": "Jr IT Project Manager",
+        "location": "Lausanne, SWZ",
+    }
+
 class TestJobService:
 
     def test_create_job_stores_in_database(self, db_session: Session, sample_job_data: dict) -> None:
@@ -67,16 +74,15 @@ class TestJobService:
             assert getattr(created_job, key) == sample_job_data[key]
 
         assert created_job.id is not None
-        assert db_session.get(JobApplication, created_job.id) == created_job
+        assert created_job.id in [job.id for job in db_session.query(JobApplication).all()]
 
-    # todo: implement
     def test_create_job_duplicate_url_rejected(self, db_session: Session, sample_job_data: dict) -> None:
         create_job(db_session, sample_job_data)
 
         with pytest.raises(ValueError):
             assert create_job(db_session, sample_job_data)
 
-    # todo: does not take into account partially empty data
+    # todo does not take into account partially empty data
     def test_create_job_empty_data_raises_error(self, db_session: Session) -> None:
         empty_data = {}
 
@@ -91,7 +97,9 @@ class TestJobService:
         created_job = create_job(db_session, sample_job_data)
 
         if created_job.id == job_id:
-            assert get_job_by_id(db_session, created_job.id) == db_session.get(JobApplication, created_job.id)
+            retrieved = get_job_by_id(db_session, created_job.id)
+            assert retrieved.company_name == sample_job_data["company_name"]
+            assert retrieved.job_url == sample_job_data["job_url"]
         else:
             assert get_job_by_id(db_session, job_id) is None
 
@@ -105,13 +113,36 @@ class TestJobService:
 
         assert updated_job.notes == sample_job_data["notes"]
 
-    # todo: implement
+        assert updated_job.id == created_job.id
+
+
     def test_update_job_empty_updates_returns_unchanged(self, db_session: Session, sample_job_data: dict) -> None:
         created_job = create_job(db_session, sample_job_data)
         job_updates = dict()
-        updated_job = update_job(db_session, job_updates)
+        updated_job = update_job(db_session, created_job.id, job_updates)
 
         assert updated_job == created_job
+
+
+    # todo add invalid fields to test
+    def test_update_job_using_inexistent_field_is_ignored(self, db_session: Session, sample_job_data: dict, sample_job_updates: dict) -> None:
+        created_job = create_job(db_session, sample_job_data)
+        updated_job = update_job(db_session, created_job.id, sample_job_updates)
+
+        for key, value in sample_job_updates.items():
+            assert getattr(updated_job, key) == sample_job_updates[key]
+
+        assert updated_job.notes == sample_job_data["notes"]
+
+
+    def test_update_job_partial_updates(self, db_session: Session, sample_partial_updates: dict, sample_job_data: dict) -> None:
+        created_job = create_job(db_session, sample_job_data)
+        updated_job = update_job(db_session, created_job.id, sample_partial_updates)
+
+        for key, value in sample_partial_updates.items():
+            assert getattr(updated_job, key) == sample_partial_updates[key]
+
+        assert updated_job.id == created_job.id
 
 
     @pytest.mark.parametrize("job_id, expected_result", [
@@ -120,6 +151,9 @@ class TestJobService:
     ])
     def test_delete_entity(self, db_session: Session, sample_job_data: dict, expected_result: bool, job_id: int) -> None:
         created_job = create_job(db_session, sample_job_data)
+
+        if not expected_result:
+            assert get_job_by_id(db_session, created_job.id) is not None
 
         assert delete_job(db_session, job_id) == expected_result
 

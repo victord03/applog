@@ -48,10 +48,10 @@
 
 ## MVP Priorities
 For the initial version, focusing on:
-1. **Core CRUD Operations** - Add, view, edit, and delete job applications - [job_service.py](applog/services/job_service.py)
-2. **Search Functionality** - Full-text search across company, title, and description ✓
-3. **Filtering System** - Filter by company, status, and location ✓
-4. **Testing** - Ensure stable functionality and data integrity
+1. **Core CRUD Operations** ✓ - Add, view, edit, and delete job applications - [job_service.py](applog/services/job_service.py)
+2. **Search Functionality** ✓ - Full-text search across company, title, and description
+3. **Filtering System** ✓ - Filter by company, status, and location
+4. **Testing** ⚠ - Ensure stable functionality and data integrity (CRUD tests complete, search/filter tests pending)
 
 ## Features Deferred to v2
 - Email notifications
@@ -95,7 +95,11 @@ For the initial version, focusing on:
 - ⚠ Edit/delete buttons on job cards
 - ⚠ Dark mode toggle (implemented but needs refinement)
 
-### Phase 3: Testing & Documentation
-- Unit tests for CRUD operations
+### Phase 3: Testing & Documentation ⚠ (In Progress)
+- ✓ Unit tests for CRUD operations (15 tests, comprehensive coverage)
+  - ✓ Create: duplicate detection, validation, empty data handling
+  - ✓ Read: parametrized tests for valid/invalid IDs
+  - ✓ Update: field validation, partial updates, nonexistent IDs
+  - ✓ Delete: parametrized success/failure scenarios
 - Search/filter functionality tests
 - Usage documentation

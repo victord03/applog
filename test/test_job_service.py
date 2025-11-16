@@ -6,6 +6,7 @@ from applog.services.job_service import (
     get_job_by_url,
     update_job,
     delete_job,
+    add_note
 )
 from applog.database import Base
 from applog.models.job_application import JobApplication, ApplicationStatus
@@ -35,7 +36,7 @@ def db_session() -> Generator:
 
     Base.metadata.create_all(bind=engine)
 
-    yield db
+    yield db  # Pytest fixture already calls the next() on the returned object. Would not work outside pytest.fixture
     db.close()
 
 
@@ -49,7 +50,12 @@ def sample_job_data() -> dict:
         "status": ApplicationStatus.ACCEPTED,
         "application_date": datetime(2025, 10, 28),
         "salary_range": "CHF 70k - CHF 78k",
-        "notes": "I am moving to Switzerland to pursue this career.",
+        "notes": [
+            {
+                "timestamp": "2025-11-16T00:00:00",
+                "note": "I am moving to Switzerland to pursue this career."
+            }
+        ],
     }
 
 
@@ -126,6 +132,17 @@ class TestCreate:
 
         entities_count_after = len(db_session.query(JobApplication).all())
         assert entities_count_before == entities_count_after
+
+
+    def test_create_job_with_non_default_status(self, db_session: Session):
+        job_data = {
+            "company_name": "Test Corp",
+            "job_title": "Developer",
+            "job_url": "https://test.com/job",
+            "status": ApplicationStatus.SCREENING  # Non-default
+        }
+        created_job = create_job(db_session, job_data)
+        assert created_job.status == ApplicationStatus.SCREENING
 
     # todo Minimize duplicates of the same job offer from different sites (e.g. LinkedIn link then indeed link)
     def test_find_similar_jobs_detects_duplicate_from_different_domain(self):
@@ -271,3 +288,42 @@ class TestDelete:
                 delete_job(db_session, created_job.id)
 
         assert get_job_by_id(db_session, created_job.id) == created_job
+
+
+class TestNotes:
+
+    def test_add_note_appends_to_existing_notes(self, db_session, sample_job_data):
+        # Create job with initial note
+        created_job = create_job(db_session, sample_job_data)
+        initial_count = len(created_job.notes)
+
+        # Add second note
+        updated_job = add_note(db_session, created_job.id, "Follow-up scheduled")
+
+        # Verify:
+        # - List grew by 1
+        assert len(updated_job.notes) == initial_count + 1
+        # - Latest note has correct text
+        assert updated_job.notes[-1]["note"] == "Follow-up scheduled"
+        # - Latest note has timestamp
+        assert "timestamp" in updated_job.notes[-1]
+
+    def test_add_note_to_nonexistent_job(self, db_session):
+        # Should return None
+        assert add_note(db_session, 999, "test") is None
+
+    def test_add_note_to_job_with_no_notes(self, db_session):
+        # Create job without notes field
+        job_data = {
+          "company_name": "Test",
+          "job_title": "Developer",
+          "job_url": "https://example.com/job"
+        }
+        created_job = create_job(db_session, job_data)
+
+        # Add first note
+        updated_job = add_note(db_session, created_job.id, "First note")
+
+        # Verify list created correctly
+        assert len(updated_job.notes) == 1
+        assert updated_job.notes[0]["note"] == "First note"

@@ -16,10 +16,24 @@
      - [x] Search field (main field, across the screen)
      - [x] Filter sidebar with dropdowns (company, status, location)
      - [ ] Add option to filter by location in the search bar
-   - [ ] **Forms & Input**
-     - [ ] Add/edit job form
+   - [x] **Forms & Input**
+     - [x] Add job form (separate page at /add-job with all fields)
+     - [x] Vertically expandable text fields for description and notes
+     - [x] Job detail page with "View Details" navigation
+     - [x] Status editing from job detail page (click "Edit" button next to status badge)
      - [ ] Edit/delete buttons on job cards
      - [ ] Optional field to store apartment offer links (multiple links with '+ Add link' UI)
+   - [x] **Note History & Timeline**
+     - [x] Vertical timeline display showing timestamped notes
+     - [x] Notes sorted in reverse chronological order (newest first)
+     - [x] Timestamps formatted as DD/MM/YYYY HH:mm for readability
+     - [x] "Add Note" form on job detail page
+     - [x] Note count indicator on job cards
+     - [x] Automatic timestamp capture for each note
+   - [x] **Date & Value Formatting**
+     - [x] Application dates displayed as DD/MM/YYYY on main page and detail page
+     - [x] Note timestamps displayed as DD/MM/YYYY HH:mm
+     - [x] Salary values formatted with K suffix (e.g., "120K" instead of "120000")
 
 ## 2. Core Application Logic
 
@@ -29,10 +43,12 @@
      - [x] Read by ID and URL
      - [x] Update with partial or full field changes
      - [x] Delete job applications
+     - [x] Add timestamped notes to existing applications
    - [x] **Validation & Data Integrity**
      - [x] Field validation (empty dict, invalid field names)
      - [x] Atomic updates (all-or-nothing, no partial updates)
      - [x] Transaction rollback on failures
+     - [x] Notes field migrated to JSON with automatic timestamp capture
      - [ ] Explicitly track job_url field presence (not just rely on SQLAlchemy NOT NULL)
 
    ### Duplicate Prevention
@@ -61,19 +77,22 @@
    - [x] **Implementation**
      - [x] SQLite database (single-user, local storage)
      - [x] SQLAlchemy ORM models and configuration
+     - [x] Notes field as JSON column storing timestamped note entries
    - [ ] **Schema Enhancements**
-     - [ ] Convert salary_range field from string to tuple(int, int)
+     - [ ] Convert salary_range field from string to tuple(int, int) or separate min/max columns
      - [ ] Extract and store keywords, company name, source website metadata
      - [ ] Optional: Create separate Company database table with relationships
 
 ## 4. Testing & Documentation
-   - [x] **Unit Tests** (17+ tests with comprehensive coverage)
+   - [x] **Unit Tests** (30 tests with comprehensive coverage - all passing)
      - [x] Create: duplicate detection, validation, empty data, rollback handling
      - [x] Read: by ID and URL, valid/invalid cases, edge cases
      - [x] Update: field validation, partial updates, nonexistent IDs, rollback
      - [x] Delete: success/failure scenarios, rollback
+     - [x] Notes: add_note functionality, append to existing notes, edge cases
    - [ ] **Integration Tests**
      - [ ] Search/filter functionality tests
+     - [ ] Form submission end-to-end tests
    - [ ] **Documentation**
      - [ ] Usage documentation
 
@@ -88,6 +107,10 @@
      - [ ] Authentication (if multi-user support needed)
      - [ ] Web hosting deployment
      - [ ] Company database with historical tracking
+   - [x] **Security**
+     - [x] SQL injection protection (SQLAlchemy parameterized queries handle automatically)
+     - [ ] Input validation for URL formats
+     - [ ] Rate limiting (if deployed publicly)
 
 ---
 
@@ -97,7 +120,7 @@
 - **Frontend**: Reflex (pure Python framework that compiles to React)
 - **Backend**: Python with SQLAlchemy ORM
 - **Database**: SQLite (single-user, local storage)
-- **Testing**: pytest with 17+ comprehensive tests
+- **Testing**: pytest with 30 comprehensive tests (all passing)
 - **Deployment**: Local development server only
 
 ## Database Schema
@@ -112,8 +135,8 @@
 - `status` - Application status (indexed)
   - Options: Applied, Screening, Interview, Offer, Rejected, Accepted, Withdrawn, No Response
 - `application_date` - Date applied
-- `salary_range` - Salary range (optional)
-- `notes` - Personal notes
+- `salary_range` - Salary range (optional, string format)
+- `notes` - JSON array of timestamped note entries: `[{"timestamp": "ISO-8601", "note": "text"}, ...]`
 - `created_at` - Record creation timestamp
 - `updated_at` - Record update timestamp
 
@@ -121,6 +144,82 @@
 
 # **Application Flow**
 
-- Application is submitted with the company
-- Job listing is manually inserted to the web interface
-- Information is collected, scrubbed (if needed), serialized and stored
+## Current MVP Flow
+1. **Add Job**: User navigates to `/add-job` and fills out the form with job details
+2. **Data Storage**: Job application is saved to SQLite database with automatic timestamp and "Applied" status
+3. **View Jobs**: Main page displays all applications with search/filter capabilities
+   - Dates formatted as DD/MM/YYYY for easy reading
+   - Salary values formatted with K suffix
+   - Filter by company, status, or location
+4. **View Details**: Click "View Details" on any job card to see full information
+5. **Edit Status**: From job detail page, click "Edit" next to status badge to update application status
+6. **Track Progress**: Add timestamped notes to track application progress (emails, interviews, etc.)
+7. **Note History**: View vertical timeline of all notes with automatic timestamps
+   - Notes displayed newest first (reverse chronological)
+   - Timestamps formatted as DD/MM/YYYY HH:mm
+
+## Pages
+- `/` - Main dashboard with job list, search, and filters (loads data from database on page load)
+- `/add-job` - Add new job application form (wired to database)
+- `/job/[id]` - Job detail page with note history, status editing, and add note functionality (fully functional)
+
+---
+
+# **Lessons Learned**
+
+## Reflex Var Handling in Templates
+
+### Issue
+**Reflex `Var` objects cannot be used with Python functions that contain conditional checks or type operations on the Var parameter itself.** Vars are reactive proxy objects, not plain values, and conditionals like `if isinstance(var, str)` or `if var` evaluate the Var object, not its runtime value.
+
+### Symptoms
+- Python functions return empty strings or default values
+- Formatting functions fail silently in `rx.foreach` loops
+- Dictionary `.get()` methods return None in templates
+
+### Root Cause
+When you pass a Reflex `Var` to a Python function that checks the parameter type or truthiness before converting to string, the check evaluates the Var wrapper object instead of the actual data. For example:
+```python
+def format_value(val):
+    if not val:  # This checks the Var object, not its value!
+        return ""
+    return str(val).upper()
+```
+
+### Solutions
+
+1. **Backend Formatting (Preferred)**
+   - Format data in the model's `to_dict()` method or service layer
+   - Return pre-formatted fields alongside raw data
+   - Example: Add `salary_range_formatted` field in addition to `salary_range`
+   - **Use for:** Date formatting, currency formatting, custom transformations
+
+2. **Reflex Built-in Components**
+   - Use `rx.moment()` for datetime formatting instead of Python `strftime()`
+   - Use `rx.cond()` for conditional rendering instead of Python `if`
+   - **Use for:** Dates, times, conditional UI elements
+
+3. **Direct Dictionary Access in Templates**
+   - Use `note["field"]` instead of `note.get("field", "")` in `rx.foreach` loops
+   - The `.get()` method doesn't work reliably with Vars
+   - **Use for:** Accessing nested dictionary fields in foreach loops
+
+4. **String Conversion Without Conditionals**
+   - If you must use Python functions, convert to string immediately without checking:
+   ```python
+   def format_value(val):
+       str_val = str(val)  # Convert first, no conditionals on the Var parameter
+       if str_val == "":   # Now check the string value
+           return ""
+       return str_val.upper()
+   ```
+
+### Common Operations Affected
+- **Date/time formatting** → Use `rx.moment()` or backend formatting
+- **Currency/number formatting** → Backend formatting in `to_dict()`
+- **String manipulation with validation** → Backend formatting or immediate string conversion
+- **Conditional rendering** → Use `rx.cond()` instead of Python `if`
+- **Dictionary field access in loops** → Use `dict["key"]` not `dict.get("key")`
+
+### Key Takeaway
+**When working with Reflex templates and reactive data, prefer backend formatting or Reflex-native components over Python utility functions.** This avoids Var serialization issues and improves maintainability.

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from applog.models.job_application import JobApplication
 from urllib.parse import urlparse
-from sqlalchemy import or_
+from datetime import datetime
 
 
 def validate_fields(job_data: dict) -> None:
@@ -37,6 +37,48 @@ def normalize_url(url: str) -> str:
 
     return normalized
 
+
+def add_note(session: Session, job_id: int, note_text: str) -> JobApplication | None:
+    """Append a timestamped note to a job application.
+
+          Args:
+              session: Database session
+              job_id: ID of job to add note to
+              note_text: The note content
+
+          Returns:
+              Updated JobApplication if exists, None otherwise
+          """
+
+    # 1. Retrieve the job
+    existing_job = get_job_by_id(session, job_id)
+
+    if existing_job is None:
+        return None
+
+    # 2. Create note entry with current timestamp
+    new_note = {
+        "timestamp": datetime.now().isoformat(),  # "2025-11-16T14:22:30.123456"
+        "note": note_text
+    }
+
+    # 3. Append to existing notes list
+    # Create a new list to ensure SQLAlchemy detects the change
+    current_notes = (existing_job.notes or []).copy()  # Handle None case and create copy
+    current_notes.append(new_note)
+    existing_job.notes = current_notes
+
+    # 4. Commit (triggers updated_at timestamp)
+    try:
+        session.commit()
+        session.refresh(existing_job)
+    except Exception:
+        session.rollback()
+        raise
+
+    return existing_job
+
+
 def create_job(session: Session, job_data: dict) -> JobApplication:
     """Create a new job application entry in the database.
 
@@ -62,6 +104,16 @@ def create_job(session: Session, job_data: dict) -> JobApplication:
 
     if existing:  # job_url is a way to avoid duplicate entries. If it exists, the creation is aborted.
         raise ValueError(f"Job with the URL {job_data['job_url']} already exists.")
+
+    # If notes field provided as string (from form), convert to list format
+    if "notes" in job_data and isinstance(job_data["notes"], str):
+        if job_data["notes"].strip():  # not empty
+            job_data["notes"] = [{
+                "timestamp": datetime.now().isoformat(),
+                "note": job_data["notes"]
+            }]
+        else:  # Empty string
+            job_data["notes"] = []
 
     job = JobApplication(**job_data)
 

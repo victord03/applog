@@ -2,7 +2,8 @@
 
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum as SQLEnum
+
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, Enum as SQLEnum
 from applog.database import Base
 
 
@@ -38,7 +39,7 @@ class JobApplication(Base):
     )
     application_date = Column(DateTime, default=datetime.now, nullable=False)
     salary_range = Column(String(100))
-    notes = Column(Text)
+    notes = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.now, onupdate=datetime.now, nullable=False
@@ -61,7 +62,33 @@ class JobApplication(Base):
             if self.application_date
             else None,
             "salary_range": self.salary_range,
+            "salary_range_formatted": self._format_salary(self.salary_range),
             "notes": self.notes,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    def _format_salary(self, salary_str):
+        """Format salary for display - adds K suffix to plain numbers."""
+        if not salary_str:
+            return ""
+
+        try:
+            cleaned = salary_str.strip()
+            if cleaned == "":
+                return ""
+
+            # If it's already formatted (contains K, $, -, etc), return as-is
+            if any(char in cleaned for char in ['K', 'k', '$', '€', '£', '-', 'CHF', 'USD', 'EUR']):
+                return salary_str
+
+            # If it's just a number, add K suffix
+            num = float(cleaned.replace(',', ''))
+            # Format based on magnitude for readability
+            if num >= 1000:
+                return f"{num/1000:.0f}K"
+            else:
+                # For numbers < 1000, assume they're already in thousands
+                return f"{num:.0f}K"
+        except (ValueError, AttributeError, TypeError):
+            return salary_str if salary_str else ""

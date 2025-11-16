@@ -1,42 +1,95 @@
 # **applog**
 
-### An application logger tool. The purpose is to track my applications and display them using a simple interface that offers filtering, status updates, email notifications. Later can be upgraded to also scrape for job listings which can automate the whole flow.
+### An application logger tool to track job applications using a simple interface with filtering, status updates, and email notifications. Can be upgraded to scrape job listings and automate the workflow.
 
-# **Steps**
+---
 
-1. Create a simple UI
-   - [x] Modern, minimal interface in a white and beige color palette with dark grey text, and ideally a dark mode in dark brown, light brown and grey text.
-   - [x] Prepare fields. 
-      - [x] Search (main field, across the screen)
-      - Add an optional field to store an apartment offer link. Be able to add as many links as possible ('+ Add link' field on the UI)
-      - Add the option to also filter by location in the search bar.
-   - Filters 
-     - Filter per company, per area, per status
-2. Create the main software. The idea is to (initially) manually insert a link to a job offering to log it.
-   - Logging system
-     - [x] Check for duplication (reject if already existing)
-     - [x] Capture created date
-     - [x] Automatically add "Applied" status (probably)
-     - [x] Store it to the database (more features will probably be added in this section)
-     - [x] Validation logic (validate fields to ensure that data updates either pass or fail; no partial updates)
-     - Explicitly track job_url field missing and not only rely on SQLAlchemy (NOT NULL)
-     - Track the region of each job listing in order to align with apartment renting.
-   - Database
-     - [x] Simple LiteSQL database (probably, or MongoDB).
-     - Convert the "salary range" field which is currently a string to a tuple(int, int)
-     - Store application data (extract keywords, company name, source website and more)
-     - Later on I may choose to create a second database that will be holding company info.
-3. Other services
-      - Email notifications
-        - Create email notifications after a certain period of time
-        - Responding to the email may update the status of the job as necessary (if the service is running. if not, a check can be implemented to automatically run at next run).
+# **Implementation Status**
 
-# Flow
+## 1. User Interface
+   - [x] **Design & Layout**
+     - [x] Modern, minimal interface in beige/white color palette with dark grey text
+     - [x] Dark mode in dark brown/light brown with grey text (needs refinement)
+     - [x] Main layout with search bar (fully functional)
+     - [x] Job list/cards display with hover effects
+   - [x] **Search & Filtering**
+     - [x] Search field (main field, across the screen)
+     - [x] Filter sidebar with dropdowns (company, status, location)
+     - [ ] Add option to filter by location in the search bar
+   - [ ] **Forms & Input**
+     - [ ] Add/edit job form
+     - [ ] Edit/delete buttons on job cards
+     - [ ] Optional field to store apartment offer links (multiple links with '+ Add link' UI)
 
-- Application is submitted with the company
-- Job listing is manually inserted to the web interface
-- Information is collected, scrubbed (if needed), serialized and stored
+## 2. Core Application Logic
 
+   ### Data Management
+   - [x] **CRUD Operations** - [job_service.py](applog/services/job_service.py)
+     - [x] Create job applications
+     - [x] Read by ID and URL
+     - [x] Update with partial or full field changes
+     - [x] Delete job applications
+   - [x] **Validation & Data Integrity**
+     - [x] Field validation (empty dict, invalid field names)
+     - [x] Atomic updates (all-or-nothing, no partial updates)
+     - [x] Transaction rollback on failures
+     - [ ] Explicitly track job_url field presence (not just rely on SQLAlchemy NOT NULL)
+
+   ### Duplicate Prevention
+   - [x] **Exact Duplicate Detection**
+     - [x] Check for existing job_url (reject if already exists)
+   - [ ] **Similar Job Detection**
+     - [ ] Detect same job from different sources (LinkedIn, Indeed, company site)
+     - [ ] Match criteria: company_name + job_title + location + different URL domain
+     - [ ] Prompt user confirmation via UI layer before creating similar entry
+
+   ### Search & Discovery
+   - [x] **Search Functionality**
+     - [x] Full-text search across company, title, and description
+   - [x] **Filtering System**
+     - [x] Filter by company, status, and location
+
+   ### Tracking Features
+   - [x] **Automatic Data Capture**
+     - [x] Capture created date (created_at timestamp)
+     - [x] Automatically assign "Applied" status on creation
+     - [x] Track updated date (updated_at timestamp)
+   - [ ] **Location-Based Tracking**
+     - [ ] Track region of each job listing to align with apartment renting search
+
+## 3. Database
+   - [x] **Implementation**
+     - [x] SQLite database (single-user, local storage)
+     - [x] SQLAlchemy ORM models and configuration
+   - [ ] **Schema Enhancements**
+     - [ ] Convert salary_range field from string to tuple(int, int)
+     - [ ] Extract and store keywords, company name, source website metadata
+     - [ ] Optional: Create separate Company database table with relationships
+
+## 4. Testing & Documentation
+   - [x] **Unit Tests** (17+ tests with comprehensive coverage)
+     - [x] Create: duplicate detection, validation, empty data, rollback handling
+     - [x] Read: by ID and URL, valid/invalid cases, edge cases
+     - [x] Update: field validation, partial updates, nonexistent IDs, rollback
+     - [x] Delete: success/failure scenarios, rollback
+   - [ ] **Integration Tests**
+     - [ ] Search/filter functionality tests
+   - [ ] **Documentation**
+     - [ ] Usage documentation
+
+## 5. Future Services (v2+)
+   - [ ] **Email Notifications**
+     - [ ] Create email notifications after a certain period of time
+     - [ ] Email response parsing to update job status automatically
+     - [ ] Batch check on next run if service was offline
+   - [ ] **URL Scraping**
+     - [ ] Auto-extract job details from posting URLs
+   - [ ] **Advanced Features**
+     - [ ] Authentication (if multi-user support needed)
+     - [ ] Web hosting deployment
+     - [ ] Company database with historical tracking
+
+---
 
 # **Project Architecture**
 
@@ -44,22 +97,8 @@
 - **Frontend**: Reflex (pure Python framework that compiles to React)
 - **Backend**: Python with SQLAlchemy ORM
 - **Database**: SQLite (single-user, local storage)
-- **Deployment**: Local only (runs on personal computer)
-
-## MVP Priorities
-For the initial version, focusing on:
-1. **Core CRUD Operations** ✓ - Add, view, edit, and delete job applications - [job_service.py](applog/services/job_service.py)
-2. **Search Functionality** ✓ - Full-text search across company, title, and description
-3. **Filtering System** ✓ - Filter by company, status, and location
-4. **Testing** ⚠ - Ensure stable functionality and data integrity (CRUD tests complete, search/filter tests pending)
-
-## Features Deferred to v2
-- Email notifications
-- URL scraping/auto-extraction of job details
-- Email response parsing
-- Authentication (not needed for single-user)
-- Company database (separate table)
-- Web hosting
+- **Testing**: pytest with 17+ comprehensive tests
+- **Deployment**: Local development server only
 
 ## Database Schema
 
@@ -78,28 +117,10 @@ For the initial version, focusing on:
 - `created_at` - Record creation timestamp
 - `updated_at` - Record update timestamp
 
-## Implementation Phases
+---
 
-### Phase 1: Backend Foundation ✓
-- SQLAlchemy models and database configuration
-- CRUD operations with duplicate detection
-- Search and filter logic
-- Data validation
+# **Application Flow**
 
-### Phase 2: Frontend with Reflex ✓ (~85% Complete)
-- ✓ Reflex app setup with custom color palette (beige/white)
-- ✓ Main layout with search bar (fully functional)
-- ✓ Filter sidebar with dropdowns (company, status, location)
-- ✓ Job list/cards display with hover effects
-- ⚠ Add/edit job form (to be added)
-- ⚠ Edit/delete buttons on job cards
-- ⚠ Dark mode toggle (implemented but needs refinement)
-
-### Phase 3: Testing & Documentation ⚠ (In Progress)
-- ✓ Unit tests for CRUD operations (15 tests, comprehensive coverage)
-  - ✓ Create: duplicate detection, validation, empty data handling
-  - ✓ Read: parametrized tests for valid/invalid IDs
-  - ✓ Update: field validation, partial updates, nonexistent IDs
-  - ✓ Delete: parametrized success/failure scenarios
-- Search/filter functionality tests
-- Usage documentation
+- Application is submitted with the company
+- Job listing is manually inserted to the web interface
+- Information is collected, scrubbed (if needed), serialized and stored

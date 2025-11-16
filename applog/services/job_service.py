@@ -1,5 +1,8 @@
 from sqlalchemy.orm import Session
 from applog.models.job_application import JobApplication
+from urllib.parse import urlparse
+from sqlalchemy import or_
+
 
 def validate_fields(job_data: dict) -> None:
     """Validate that dictionary is not empty and all field names exist in JobApplication model.
@@ -18,6 +21,22 @@ def validate_fields(job_data: dict) -> None:
             raise ValueError(f"Field {key} does not exist. Maybe typo?")
 
 
+def normalize_url(url: str) -> str:
+    """Normalize URL: lowercase scheme/domain, strip trailing slash."""
+    # Parse url
+    u = urlparse(url)
+
+    # Normalize (lowercase scheme/hostname)
+    u = u._replace(
+        scheme=u.scheme.lower(),
+        netloc=u.netloc.lower()
+    )
+
+    # Rebuild URL and strip trailing slash
+    normalized = u.geturl().rstrip('/')
+
+    return normalized
+
 def create_job(session: Session, job_data: dict) -> JobApplication:
     """Create a new job application entry in the database.
 
@@ -31,10 +50,14 @@ def create_job(session: Session, job_data: dict) -> JobApplication:
     Raises:
         ValueError: If job_data is invalid or job_url already exists in database.
     """
-    validate_fields(job_data)  # Checks for 1. Empty dict, 2. Invalid fields. Raises ValueError.
+    validate_fields(
+        job_data
+    )  # Checks for 1. Empty dict, 2. Invalid fields. Raises ValueError.
+
+    normalized_url = normalize_url(job_data["job_url"])
 
     existing = (
-        session.query(JobApplication).filter_by(job_url=job_data["job_url"]).first()
+        session.query(JobApplication).filter_by(job_url=normalized_url).first()
     )
 
     if existing:  # job_url is a way to avoid duplicate entries. If it exists, the creation is aborted.
@@ -66,6 +89,30 @@ def get_job_by_id(session: Session, job_id: int) -> JobApplication | None:
     return session.get(JobApplication, job_id)
 
 
+def get_job_by_url(session: Session, job_url: str) -> JobApplication | None:
+    """Retrieve job application by URL.
+
+    Args:
+      session: Database session
+      job_url: The job posting URL
+
+    Returns:
+      JobApplication if found, None otherwise
+    """
+
+    normalized_url = normalize_url(job_url)
+
+    if normalized_url == "":
+        return None
+
+    existing = session.query(JobApplication).filter(JobApplication.job_url == normalized_url).first()
+
+    if existing:
+        return get_job_by_id(session, existing.id)
+    else:
+        return None
+
+
 def update_job(
     session: Session, job_id: int, job_updates: dict
 ) -> JobApplication | None:
@@ -82,7 +129,9 @@ def update_job(
     Raises:
         ValueError: If job_updates is invalid (empty or contains invalid field names).
     """
-    validate_fields(job_updates)  # Checks for 1. Empty dict, 2. Invalid fields. Raises ValueError.
+    validate_fields(
+        job_updates
+    )  # Checks for 1. Empty dict, 2. Invalid fields. Raises ValueError.
 
     existing_job = get_job_by_id(session, job_id)
 

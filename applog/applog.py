@@ -132,6 +132,11 @@ class State(rx.State):
     show_delete_dialog: bool = False
 
     @rx.var
+    def total_jobs_count(self) -> int:
+        """Get total number of job applications."""
+        return len(self.jobs)
+
+    @rx.var
     def filtered_jobs(self) -> List[Dict]:
         """Filter jobs based on search and filters."""
         result = self.jobs
@@ -817,14 +822,6 @@ def job_detail() -> rx.Component:
             rx.hstack(
                 rx.heading("Job Details", size="7"),
                 rx.spacer(),
-                rx.button(
-                    # todo move to the right of the "back to list" button
-                    "Delete Job",
-                    color_scheme="red",
-                    variant="soft",
-                    size="2",
-                    on_click=State.set_show_delete_dialog(True),
-                ),
                 rx.link(
                     rx.button(
                         "← Back to List",
@@ -1016,6 +1013,17 @@ def job_detail() -> rx.Component:
                         width="100%",
                         margin_top="1em",
                     ),
+                    # Delete job button
+                    rx.box(
+                        rx.button(
+                            "Delete Job Application",
+                            color_scheme="red",
+                            variant="soft",
+                            size="2",
+                            on_click=State.set_show_delete_dialog(True),
+                        ),
+                        margin_top="2em",
+                    ),
                     spacing="4",
                     width="100%",
                 ),
@@ -1062,13 +1070,22 @@ def index() -> rx.Component:
                     spacing="2",
                 ),
                 rx.spacer(),
-                rx.link(
-                    rx.button(
-                        "+ Add Job",
-                        size="3",
-                        variant="solid",
+                rx.vstack(
+                    rx.link(
+                        rx.button(
+                            "+ Add Job",
+                            size="3",
+                            variant="solid",
+                        ),
+                        href="/add-job",
                     ),
-                    href="/add-job",
+                    rx.text(
+                        f"Applications: {State.total_jobs_count}",
+                        size="2",
+                        color="#888",
+                    ),
+                    align_items="end",
+                    spacing="2",
                 ),
                 width="100%",
                 align_items="center",

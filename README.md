@@ -12,6 +12,7 @@
      - [x] Dark mode in dark brown/light brown with grey text (needs refinement)
      - [x] Main layout with search bar (fully functional)
      - [x] Job list/cards display with hover effects
+     - [x] Total applications counter displayed on main page
    - [x] **Search & Filtering**
      - [x] Search field (main field, across the screen)
      - [x] Filter sidebar with dropdowns (company, status, location)
@@ -21,6 +22,7 @@
      - [x] Vertically expandable text fields for description and notes
      - [x] Job detail page with "View Details" navigation
      - [x] Status editing from job detail page (click "Edit" button next to status badge)
+     - [x] Delete job from job detail page with confirmation dialog
      - [ ] Edit/delete buttons on job cards
      - [ ] Optional field to store apartment offer links (multiple links with '+ Add link' UI)
    - [x] **Note History & Timeline**
@@ -148,6 +150,7 @@
 1. **Add Job**: User navigates to `/add-job` and fills out the form with job details
 2. **Data Storage**: Job application is saved to SQLite database with automatic timestamp and "Applied" status
 3. **View Jobs**: Main page displays all applications with search/filter capabilities
+   - Total applications counter displayed under "Add Job" button
    - Dates formatted as DD/MM/YYYY for easy reading
    - Salary values formatted with K suffix
    - Filter by company, status, or location
@@ -157,11 +160,12 @@
 7. **Note History**: View vertical timeline of all notes with automatic timestamps
    - Notes displayed newest first (reverse chronological)
    - Timestamps formatted as DD/MM/YYYY HH:mm
+8. **Delete Job**: From job detail page, click "Delete Job Application" button at bottom with confirmation dialog
 
 ## Pages
-- `/` - Main dashboard with job list, search, and filters (loads data from database on page load)
+- `/` - Main dashboard with job list, search, filters, and application counter (loads data from database on page load)
 - `/add-job` - Add new job application form (wired to database)
-- `/job/[id]` - Job detail page with note history, status editing, and add note functionality (fully functional)
+- `/job/[id]` - Job detail page with note history, status editing, add note, and delete job functionality (fully functional)
 
 ---
 

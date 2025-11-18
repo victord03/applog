@@ -1040,7 +1040,7 @@ def job_detail() -> rx.Component:
                 rx.alert_dialog.description("Are you sure? This cannot be undone."),
                 rx.flex(
                     rx.alert_dialog.cancel(
-                        rx.button("Cancel", variant="soft"),
+                        rx.button("Cancel", variant="soft", on_click=State.set_show_delete_dialog(False)),
                     ),
                     rx.alert_dialog.action(
                         rx.button("Delete", color_scheme="red", on_click=State.handle_delete_job),

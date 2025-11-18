@@ -1151,14 +1151,11 @@ def job_detail() -> rx.Component:
                                     rx.text("Quick Insert from Templates:", weight="bold", size="2"),
                                     rx.spacer(),
                                     rx.hstack(
-                                        rx.tooltip(
-                                            rx.icon_button(
-                                                rx.icon("eye"),
-                                                size="1",
-                                                variant="ghost",
-                                                on_click=State.set_show_templates_dialog(True),
-                                            ),
-                                            content="View All Templates",
+                                        rx.button(
+                                            "View All",
+                                            size="1",
+                                            variant="ghost",
+                                            on_click=State.set_show_templates_dialog(True),
                                         ),
                                         rx.tooltip(
                                             rx.link(
@@ -1358,7 +1355,11 @@ def job_detail() -> rx.Component:
                 ),
                 rx.flex(
                     rx.dialog.close(
-                        rx.button("Close", variant="soft"),
+                        rx.button(
+                            "Close",
+                            variant="soft",
+                            on_click=State.set_show_templates_dialog(False),
+                        ),
                     ),
                     spacing="3",
                     margin_top="1em",

@@ -268,6 +268,8 @@ class State(rx.State):
         # Load fresh data from database
         self.load_jobs_from_db()
         self.load_templates_from_db()
+        # Clear template search query for fresh page load
+        self.template_search_query = ""
         # Access the route parameter from router state
         job_id = self.router.page.params.get("job_id", "0")
         try:
@@ -350,8 +352,12 @@ class State(rx.State):
             if result:
                 # Clear the input
                 self.new_note_text = ""
+                # Clear template search to avoid any filtering issues
+                self.template_search_query = ""
                 # Reload jobs from database to get updated notes
                 self.load_jobs_from_db()
+                # Force state refresh by yielding
+                yield
         except Exception as e:
             self.form_message = f"Error adding note: {str(e)}"
             self.form_message_type = "error"
@@ -422,8 +428,10 @@ class State(rx.State):
         self.form_message = ""
         self.form_message_type = ""
 
-    def handle_template_submit(self):
+    async def handle_template_submit(self):
         """Handle template form submission (create or update)."""
+        import asyncio
+
         if not self.form_template_name or not self.form_template_content:
             self.form_message = "Please fill in both name and content"
             self.form_message_type = "error"
@@ -458,6 +466,12 @@ class State(rx.State):
 
             self.clear_template_form()
             self.load_templates_from_db()
+
+            # Auto-clear success message after 3 seconds
+            yield
+            await asyncio.sleep(3)
+            self.form_message = ""
+            self.form_message_type = ""
         except ValueError as e:
             self.form_message = f"Error: {str(e)}"
             self.form_message_type = "error"
@@ -1137,21 +1151,28 @@ def job_detail() -> rx.Component:
                                     rx.text("Quick Insert from Templates:", weight="bold", size="2"),
                                     rx.spacer(),
                                     rx.hstack(
-                                        rx.button(
-                                            "View All Templates",
-                                            size="1",
-                                            variant="ghost",
-                                            on_click=State.set_show_templates_dialog(True),
-                                        ),
-                                        rx.link(
-                                            rx.button(
-                                                "Manage Templates",
+                                        rx.tooltip(
+                                            rx.icon_button(
+                                                rx.icon("eye"),
                                                 size="1",
-                                                variant="soft",
+                                                variant="ghost",
+                                                on_click=State.set_show_templates_dialog(True),
                                             ),
-                                            href="/templates",
+                                            content="View All Templates",
+                                        ),
+                                        rx.tooltip(
+                                            rx.link(
+                                                rx.icon_button(
+                                                    rx.icon("settings"),
+                                                    size="1",
+                                                    variant="ghost",
+                                                ),
+                                                href="/templates",
+                                            ),
+                                            content="Manage Templates",
                                         ),
                                         spacing="2",
+                                        align_items="center",
                                     ),
                                     width="100%",
                                     align_items="center",

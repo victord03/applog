@@ -3,8 +3,15 @@
 import reflex as rx
 from typing import List, Dict
 from applog.services.job_service import create_job, add_note, delete_job
+from applog.services.template_service import (
+    create_template,
+    get_all_templates,
+    update_template,
+    delete_template,
+)
 from applog.database import SessionLocal, init_db
 from applog.models.job_application import JobApplication
+from applog.models.note_template import NoteTemplate
 
 
 # Mock data for demonstration
@@ -131,6 +138,18 @@ class State(rx.State):
 
     show_delete_dialog: bool = False
 
+    # Template management state
+    templates: List[Dict] = []
+    template_search_query: str = ""
+    selected_template_id: int = 0
+
+    # Template form state
+    form_template_name: str = ""
+    form_template_content: str = ""
+    template_edit_mode: bool = False
+    show_templates_dialog: bool = False
+    show_delete_template_dialog: bool = False
+
     @rx.var
     def total_jobs_count(self) -> int:
         """Get total number of job applications."""
@@ -203,6 +222,27 @@ class State(rx.State):
             return list(reversed(self.selected_job["notes"]))
         return []
 
+    @rx.var
+    def filtered_templates(self) -> List[Dict]:
+        """Filter templates based on search query."""
+        if not self.template_search_query:
+            return self.templates
+
+        query = self.template_search_query.lower()
+        return [
+            t
+            for t in self.templates
+            if query in t["name"].lower() or query in t["content"].lower()
+        ]
+
+    @rx.var
+    def selected_template(self) -> Dict | None:
+        """Get the currently selected template."""
+        for template in self.templates:
+            if template.get("id") == self.selected_template_id:
+                return template
+        return None
+
     def load_jobs_from_db(self):
         """Load all jobs from database and convert to dict format."""
         db = SessionLocal()
@@ -227,6 +267,7 @@ class State(rx.State):
         """Load a job by ID from URL parameter."""
         # Load fresh data from database
         self.load_jobs_from_db()
+        self.load_templates_from_db()
         # Access the route parameter from router state
         job_id = self.router.page.params.get("job_id", "0")
         try:
@@ -365,6 +406,109 @@ class State(rx.State):
         finally:
             db.close()
 
+    # Template management handlers
+    def load_templates_from_db(self):
+        """Load all templates from database."""
+        db = SessionLocal()
+        try:
+            template_records = get_all_templates(db)
+            self.templates = [t.to_dict() for t in template_records]
+        finally:
+            db.close()
+
+    def load_templates_page(self):
+        """Handler for templates page load."""
+        self.load_templates_from_db()
+        self.form_message = ""
+        self.form_message_type = ""
+
+    def handle_template_submit(self):
+        """Handle template form submission (create or update)."""
+        if not self.form_template_name or not self.form_template_content:
+            self.form_message = "Please fill in both name and content"
+            self.form_message_type = "error"
+            return
+
+        db = SessionLocal()
+        try:
+            if self.template_edit_mode and self.selected_template_id:
+                # Update existing template
+                result = update_template(
+                    db,
+                    self.selected_template_id,
+                    {
+                        "name": self.form_template_name,
+                        "content": self.form_template_content,
+                    },
+                )
+                if result:
+                    self.form_message = "Template updated successfully!"
+                    self.form_message_type = "success"
+            else:
+                # Create new template
+                result = create_template(
+                    db,
+                    {
+                        "name": self.form_template_name,
+                        "content": self.form_template_content,
+                    },
+                )
+                self.form_message = "Template created successfully!"
+                self.form_message_type = "success"
+
+            self.clear_template_form()
+            self.load_templates_from_db()
+        except ValueError as e:
+            self.form_message = f"Error: {str(e)}"
+            self.form_message_type = "error"
+        finally:
+            db.close()
+
+    def handle_edit_template(self, template_id: int):
+        """Load template data into form for editing."""
+        for template in self.templates:
+            if template["id"] == template_id:
+                self.selected_template_id = template_id
+                self.form_template_name = template["name"]
+                self.form_template_content = template["content"]
+                self.template_edit_mode = True
+                break
+
+    def handle_delete_template(self):
+        """Delete the selected template."""
+        db = SessionLocal()
+        try:
+            if delete_template(db, self.selected_template_id):
+                self.form_message = "Template deleted successfully!"
+                self.form_message_type = "success"
+                self.show_delete_template_dialog = False
+                self.load_templates_from_db()
+            else:
+                self.form_message = "Template not found"
+                self.form_message_type = "error"
+        except Exception as e:
+            self.form_message = f"Error deleting template: {str(e)}"
+            self.form_message_type = "error"
+        finally:
+            db.close()
+
+    def handle_insert_template(self, template_id: int):
+        """Insert selected template content into note textarea."""
+        for template in self.templates:
+            if template["id"] == template_id:
+                # Insert at end of current text (or replace if empty)
+                if self.new_note_text:
+                    self.new_note_text += "\n" + template["content"]
+                else:
+                    self.new_note_text = template["content"]
+                break
+
+    def clear_template_form(self):
+        """Clear template form fields."""
+        self.form_template_name = ""
+        self.form_template_content = ""
+        self.template_edit_mode = False
+        self.selected_template_id = 0
 
 
 def format_date(iso_date_str) -> str:
@@ -983,10 +1127,88 @@ def job_detail() -> rx.Component:
                         width="100%",
                         margin_top="1em",
                     ),
-                    # Add note form
+                    # Add note form with template selector
                     rx.card(
                         rx.vstack(
                             rx.heading("Add Note", size="4", margin_bottom="1em"),
+                            # Template selector section
+                            rx.vstack(
+                                rx.hstack(
+                                    rx.text("Quick Insert from Templates:", weight="bold", size="2"),
+                                    rx.spacer(),
+                                    rx.hstack(
+                                        rx.button(
+                                            "View All Templates",
+                                            size="1",
+                                            variant="ghost",
+                                            on_click=State.set_show_templates_dialog(True),
+                                        ),
+                                        rx.link(
+                                            rx.button(
+                                                "Manage Templates",
+                                                size="1",
+                                                variant="soft",
+                                            ),
+                                            href="/templates",
+                                        ),
+                                        spacing="2",
+                                    ),
+                                    width="100%",
+                                    align_items="center",
+                                ),
+                                rx.cond(
+                                    State.templates,
+                                    rx.vstack(
+                                        rx.input(
+                                            placeholder="Search templates...",
+                                            value=State.template_search_query,
+                                            on_change=State.set_template_search_query,
+                                            width="100%",
+                                            size="2",
+                                        ),
+                                        rx.box(
+                                            rx.vstack(
+                                                rx.foreach(
+                                                    State.filtered_templates,
+                                                    lambda template: rx.tooltip(
+                                                        rx.button(
+                                                            template["name"],
+                                                            size="2",
+                                                            variant="soft",
+                                                            on_click=lambda: State.handle_insert_template(template["id"]),
+                                                            width="100%",
+                                                        ),
+                                                        content=template["content"],
+                                                    ),
+                                                ),
+                                                spacing="2",
+                                                width="100%",
+                                            ),
+                                            max_height="200px",
+                                            overflow_y="auto",
+                                            width="100%",
+                                            padding="0.5em",
+                                            border_radius="6px",
+                                            background="#f9f6f1",
+                                        ),
+                                        spacing="2",
+                                        width="100%",
+                                    ),
+                                    rx.text(
+                                        "No templates available. Create templates in the Templates page.",
+                                        size="2",
+                                        color="#888",
+                                        font_style="italic",
+                                    ),
+                                ),
+                                spacing="2",
+                                width="100%",
+                                padding="1em",
+                                border_radius="6px",
+                                background="#f5f1ec",
+                                margin_bottom="1em",
+                            ),
+                            # Note textarea
                             rx.text_area(
                                 placeholder="Enter your note here (e.g., 'Recruiter called for phone screen', 'Sent thank you email')...",
                                 value=State.new_note_text,
@@ -1050,6 +1272,311 @@ def job_detail() -> rx.Component:
             ),
             open=State.show_delete_dialog,
         ),
+        # View All Templates dialog
+        rx.dialog.root(
+            rx.dialog.content(
+                rx.dialog.title("All Templates"),
+                rx.dialog.description(
+                    "Click on a template name to insert it into your note."
+                ),
+                rx.box(
+                    rx.cond(
+                        State.templates,
+                        rx.vstack(
+                            rx.foreach(
+                                State.templates,
+                                lambda template: rx.box(
+                                    rx.vstack(
+                                        rx.hstack(
+                                            rx.text(
+                                                template["name"],
+                                                weight="bold",
+                                                size="3",
+                                                flex="1",
+                                            ),
+                                            rx.button(
+                                                "Insert",
+                                                size="1",
+                                                variant="soft",
+                                                on_click=lambda: [
+                                                    State.handle_insert_template(template["id"]),
+                                                    State.set_show_templates_dialog(False),
+                                                ],
+                                            ),
+                                            width="100%",
+                                            justify="between",
+                                            align_items="center",
+                                        ),
+                                        rx.text(
+                                            template["content"],
+                                            size="2",
+                                            color="#666",
+                                        ),
+                                        spacing="2",
+                                        width="100%",
+                                    ),
+                                    padding="1em",
+                                    border_radius="6px",
+                                    background="#f9f6f1",
+                                    border="1px solid #e0d5c7",
+                                    width="100%",
+                                ),
+                            ),
+                            spacing="3",
+                            width="100%",
+                        ),
+                        rx.text(
+                            "No templates available.",
+                            size="2",
+                            color="#888",
+                        ),
+                    ),
+                    max_height="400px",
+                    overflow_y="auto",
+                    padding="1em",
+                ),
+                rx.flex(
+                    rx.dialog.close(
+                        rx.button("Close", variant="soft"),
+                    ),
+                    spacing="3",
+                    margin_top="1em",
+                    justify="end",
+                ),
+            ),
+            open=State.show_templates_dialog,
+        ),
+        padding="2em",
+        background="#faf8f5",
+        min_height="100vh",
+    )
+
+
+def templates_page() -> rx.Component:
+    """Note templates management page."""
+    return rx.container(
+        rx.color_mode.button(position="top-right"),
+        rx.vstack(
+            # Header
+            rx.hstack(
+                rx.heading("Note Templates", size="7"),
+                rx.spacer(),
+                rx.link(
+                    rx.button(
+                        "← Back to Jobs",
+                        variant="soft",
+                        size="2",
+                    ),
+                    href="/",
+                ),
+                width="100%",
+                align_items="center",
+                margin_bottom="2em",
+            ),
+            # Search bar
+            rx.input(
+                placeholder="Search templates by name or content...",
+                value=State.template_search_query,
+                on_change=State.set_template_search_query,
+                width="100%",
+                size="3",
+                margin_bottom="1em",
+            ),
+            # Add/Edit template form
+            rx.card(
+                rx.vstack(
+                    rx.heading(
+                        rx.cond(
+                            State.template_edit_mode,
+                            "Edit Template",
+                            "Add New Template",
+                        ),
+                        size="5",
+                        margin_bottom="1em",
+                    ),
+                    rx.vstack(
+                        rx.text("Template Name", weight="bold", size="2"),
+                        rx.input(
+                            placeholder="e.g., Cover Letter Sent, Phone Screen Completed",
+                            value=State.form_template_name,
+                            on_change=State.set_form_template_name,
+                            width="100%",
+                            size="3",
+                        ),
+                        spacing="2",
+                        align_items="start",
+                        width="100%",
+                    ),
+                    rx.vstack(
+                        rx.text("Template Content", weight="bold", size="2"),
+                        rx.text_area(
+                            placeholder="The note text that will be inserted...",
+                            value=State.form_template_content,
+                            on_change=State.set_form_template_content,
+                            width="100%",
+                            min_height="100px",
+                            resize="vertical",
+                        ),
+                        spacing="2",
+                        align_items="start",
+                        width="100%",
+                    ),
+                    # Message display
+                    rx.cond(
+                        State.form_message,
+                        rx.cond(
+                            State.form_message_type == "success",
+                            rx.callout(
+                                State.form_message,
+                                icon="info",
+                                color_scheme="green",
+                                size="2",
+                            ),
+                            rx.callout(
+                                State.form_message,
+                                icon="alert-triangle",
+                                color_scheme="red",
+                                size="2",
+                            ),
+                        ),
+                    ),
+                    # Form actions
+                    rx.hstack(
+                        rx.cond(
+                            State.template_edit_mode,
+                            rx.button(
+                                "Cancel",
+                                variant="soft",
+                                size="3",
+                                on_click=State.clear_template_form,
+                            ),
+                        ),
+                        rx.spacer(),
+                        rx.button(
+                            rx.cond(
+                                State.template_edit_mode,
+                                "Update Template",
+                                "Add Template",
+                            ),
+                            size="3",
+                            variant="solid",
+                            on_click=State.handle_template_submit,
+                        ),
+                        width="100%",
+                        margin_top="1em",
+                    ),
+                    spacing="4",
+                    width="100%",
+                ),
+                padding="2em",
+                width="100%",
+            ),
+            # Templates list
+            rx.card(
+                rx.vstack(
+                    rx.heading("Your Templates", size="5", margin_bottom="1em"),
+                    rx.cond(
+                        State.filtered_templates,
+                        rx.vstack(
+                            rx.foreach(
+                                State.filtered_templates,
+                                lambda template: rx.box(
+                                    rx.vstack(
+                                        rx.hstack(
+                                            rx.heading(
+                                                template["name"], size="4", flex="1"
+                                            ),
+                                            rx.hstack(
+                                                rx.button(
+                                                    "Edit",
+                                                    size="1",
+                                                    variant="soft",
+                                                    on_click=lambda: State.handle_edit_template(
+                                                        template["id"]
+                                                    ),
+                                                ),
+                                                rx.button(
+                                                    "Delete",
+                                                    size="1",
+                                                    variant="soft",
+                                                    color_scheme="red",
+                                                    on_click=lambda: [
+                                                        State.set_selected_template_id(
+                                                            template["id"]
+                                                        ),
+                                                        State.set_show_delete_template_dialog(
+                                                            True
+                                                        ),
+                                                    ],
+                                                ),
+                                                spacing="2",
+                                            ),
+                                            justify="between",
+                                            width="100%",
+                                        ),
+                                        rx.text(
+                                            template["content"],
+                                            size="2",
+                                            color="#666",
+                                        ),
+                                        spacing="2",
+                                        width="100%",
+                                    ),
+                                    padding="1em",
+                                    border_radius="6px",
+                                    background="#f9f6f1",
+                                    border="1px solid #e0d5c7",
+                                    width="100%",
+                                ),
+                            ),
+                            spacing="3",
+                            width="100%",
+                        ),
+                        rx.text(
+                            "No templates found. Add one above!",
+                            size="2",
+                            color="#888",
+                            font_style="italic",
+                        ),
+                    ),
+                    spacing="3",
+                    width="100%",
+                ),
+                padding="2em",
+                width="100%",
+                margin_top="1em",
+            ),
+            spacing="4",
+            padding="2em",
+            max_width="900px",
+        ),
+        # Delete confirmation dialog
+        rx.alert_dialog.root(
+            rx.alert_dialog.content(
+                rx.alert_dialog.title("Delete Template"),
+                rx.alert_dialog.description(
+                    "Are you sure? This cannot be undone."
+                ),
+                rx.flex(
+                    rx.alert_dialog.cancel(
+                        rx.button(
+                            "Cancel",
+                            variant="soft",
+                            on_click=State.set_show_delete_template_dialog(False),
+                        ),
+                    ),
+                    rx.alert_dialog.action(
+                        rx.button(
+                            "Delete",
+                            color_scheme="red",
+                            on_click=State.handle_delete_template,
+                        ),
+                    ),
+                    spacing="3",
+                ),
+            ),
+            open=State.show_delete_template_dialog,
+        ),
         padding="2em",
         background="#faf8f5",
         min_height="100vh",
@@ -1071,13 +1598,24 @@ def index() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.vstack(
-                    rx.link(
-                        rx.button(
-                            "+ Add Job",
-                            size="3",
-                            variant="solid",
+                    rx.hstack(
+                        rx.link(
+                            rx.button(
+                                "Templates",
+                                size="3",
+                                variant="soft",
+                            ),
+                            href="/templates",
                         ),
-                        href="/add-job",
+                        rx.link(
+                            rx.button(
+                                "+ Add Job",
+                                size="3",
+                                variant="solid",
+                            ),
+                            href="/add-job",
+                        ),
+                        spacing="3",
                     ),
                     rx.text(
                         f"Applications: {State.total_jobs_count}",
@@ -1121,6 +1659,7 @@ app = rx.App(
 app.add_page(index, on_load=State.load_index_page)
 app.add_page(add_job, route="/add-job", on_load=State.load_add_job_page)
 app.add_page(job_detail, route="/job/[job_id]", on_load=State.load_job)
+app.add_page(templates_page, route="/templates", on_load=State.load_templates_page)
 
 # Initialize database tables on app startup
 init_db()

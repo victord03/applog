@@ -1,5 +1,6 @@
 """Models package."""
 
 from applog.models.job_application import JobApplication, ApplicationStatus
+from applog.models.note_template import NoteTemplate
 
-__all__ = ["JobApplication", "ApplicationStatus"]
+__all__ = ["JobApplication", "ApplicationStatus", "NoteTemplate"]

@@ -36,6 +36,16 @@
      - [x] Application dates displayed as DD/MM/YYYY on main page and detail page
      - [x] Note timestamps displayed as DD/MM/YYYY HH:mm
      - [x] Salary values formatted with K suffix (e.g., "120K" instead of "120000")
+   - [x] **Note Templates**
+     - [x] Templates Management page (`/templates` route)
+     - [x] Create, edit, and delete reusable note templates
+     - [x] Real-time search by template name or content
+     - [x] Template selector in job detail page with search
+     - [x] Hover tooltips showing full template content
+     - [x] Click to insert template into note textarea (non-destructive)
+     - [x] "View All Templates" dialog
+     - [x] Auto-clear success messages after 3 seconds
+     - [x] Settings icon link to Templates Management page
 
 ## 2. Core Application Logic
 
@@ -75,6 +85,19 @@
    - [ ] **Location-Based Tracking**
      - [ ] Track region of each job listing to align with apartment renting search
 
+   ### Note Templates
+   - [x] **Template CRUD Operations** - [template_service.py](applog/services/template_service.py)
+     - [x] Create reusable note templates
+     - [x] Read templates by ID
+     - [x] Get all templates ordered by name
+     - [x] Search templates by name or content (case-insensitive)
+     - [x] Update existing templates
+     - [x] Delete templates
+   - [x] **Template Validation**
+     - [x] Require name and content fields
+     - [x] Field validation (empty dict, invalid field names)
+     - [x] Transaction rollback on failures
+
 ## 3. Database
    - [x] **Implementation**
      - [x] SQLite database (single-user, local storage)
@@ -86,12 +109,18 @@
      - [ ] Optional: Create separate Company database table with relationships
 
 ## 4. Testing & Documentation
-   - [x] **Unit Tests** (30 tests with comprehensive coverage - all passing)
-     - [x] Create: duplicate detection, validation, empty data, rollback handling
-     - [x] Read: by ID and URL, valid/invalid cases, edge cases
-     - [x] Update: field validation, partial updates, nonexistent IDs, rollback
-     - [x] Delete: success/failure scenarios, rollback
-     - [x] Notes: add_note functionality, append to existing notes, edge cases
+   - [x] **Unit Tests** (49 tests with comprehensive coverage - all passing)
+     - [x] **Job Service Tests** (31 tests)
+       - [x] Create: duplicate detection, validation, empty data, rollback handling
+       - [x] Read: by ID and URL, valid/invalid cases, edge cases
+       - [x] Update: field validation, partial updates, nonexistent IDs, rollback
+       - [x] Delete: success/failure scenarios, rollback
+       - [x] Notes: add_note functionality, append to existing notes, edge cases
+     - [x] **Template Service Tests** (18 tests)
+       - [x] Create: validation, missing fields, empty data, rollback
+       - [x] Read: by ID, get all templates, search by name/content
+       - [x] Update: field validation, empty dict, nonexistent IDs
+       - [x] Delete: success/failure scenarios
    - [ ] **Integration Tests**
      - [ ] Search/filter functionality tests
      - [ ] Form submission end-to-end tests
@@ -122,7 +151,7 @@
 - **Frontend**: Reflex (pure Python framework that compiles to React)
 - **Backend**: Python with SQLAlchemy ORM
 - **Database**: SQLite (single-user, local storage)
-- **Testing**: pytest with 30 comprehensive tests (all passing)
+- **Testing**: pytest with 49 comprehensive tests (all passing)
 - **Deployment**: Local development server only
 
 ## Database Schema
@@ -142,6 +171,13 @@
 - `created_at` - Record creation timestamp
 - `updated_at` - Record update timestamp
 
+**NoteTemplate Table:**
+- `id` - Primary key
+- `name` - Template name (indexed)
+- `content` - Template text content
+- `created_at` - Template creation timestamp
+- `updated_at` - Template update timestamp
+
 ---
 
 # **Application Flow**
@@ -151,21 +187,35 @@
 2. **Data Storage**: Job application is saved to SQLite database with automatic timestamp and "Applied" status
 3. **View Jobs**: Main page displays all applications with search/filter capabilities
    - Total applications counter displayed under "Add Job" button
+   - "Templates" button for quick access to template management
    - Dates formatted as DD/MM/YYYY for easy reading
    - Salary values formatted with K suffix
    - Filter by company, status, or location
 4. **View Details**: Click "View Details" on any job card to see full information
 5. **Edit Status**: From job detail page, click "Edit" next to status badge to update application status
 6. **Track Progress**: Add timestamped notes to track application progress (emails, interviews, etc.)
+   - Use template selector to quickly insert common note text
+   - Search templates by name or content
+   - Hover over templates to preview full content
+   - Click template to insert into note textarea (non-destructive)
+   - "View All" button to see all templates in a dialog
+   - Settings icon to manage templates
 7. **Note History**: View vertical timeline of all notes with automatic timestamps
    - Notes displayed newest first (reverse chronological)
    - Timestamps formatted as DD/MM/YYYY HH:mm
 8. **Delete Job**: From job detail page, click "Delete Job Application" button at bottom with confirmation dialog
+9. **Manage Templates**: Navigate to `/templates` to create, edit, search, and delete note templates
+   - Create reusable note templates with name and content
+   - Real-time search across template names and content
+   - Edit existing templates
+   - Delete templates with confirmation
+   - Success messages auto-clear after 3 seconds
 
 ## Pages
-- `/` - Main dashboard with job list, search, filters, and application counter (loads data from database on page load)
+- `/` - Main dashboard with job list, search, filters, application counter, and Templates navigation button
 - `/add-job` - Add new job application form (wired to database)
-- `/job/[id]` - Job detail page with note history, status editing, add note, and delete job functionality (fully functional)
+- `/job/[id]` - Job detail page with note history, status editing, add note with template selector, and delete job functionality
+- `/templates` - Templates Management page for creating, editing, searching, and deleting note templates
 
 ---
 

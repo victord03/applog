@@ -580,16 +580,16 @@ def job_card(job: Dict) -> rx.Component:
                 justify="between",
                 width="100%",
             ),
-            rx.text(job["job_title"], size="3", weight="medium", color="#555"),
+            rx.text(job["job_title"], size="3", weight="medium", color=rx.color("gray", 11)),
             rx.hstack(
-                rx.text(f"📍 {job['location']}", size="2", color="#666"),
-                rx.text(f"📅 {format_date(job['application_date'])}", size="2", color="#666"),
+                rx.text(f"📍 {job['location']}", size="2", color=rx.color("gray", 11)),
+                rx.text(f"📅 {format_date(job['application_date'])}", size="2", color=rx.color("gray", 11)),
                 spacing="4",
             ),
             rx.cond(
                 job.get("salary_range_formatted"),
                 rx.text(
-                    f"💰 {job['salary_range_formatted']}", size="2", color="#666", weight="medium"
+                    f"💰 {job['salary_range_formatted']}", size="2", color=rx.color("gray", 11), weight="medium"
                 ),
             ),
             rx.cond(
@@ -597,7 +597,7 @@ def job_card(job: Dict) -> rx.Component:
                 rx.text(
                     "📝 Has notes",
                     size="2",
-                    color="#777",
+                    color=rx.color("gray", 10),
                     font_style="italic",
                 ),
             ),
@@ -617,9 +617,8 @@ def job_card(job: Dict) -> rx.Component:
         ),
         padding="1.2em",
         border_radius="8px",
-        border="1px solid #e0d5c7",
-        background="white",
-        _hover={"box_shadow": "0 4px 12px rgba(0,0,0,0.1)", "border_color": "#d4c5b3"},
+        border=f"1px solid {rx.color('gray', 6)}",
+        _hover={"box_shadow": "0 4px 12px rgba(0,0,0,0.15)"},
         transition="all 0.2s ease",
         width="100%",
     )
@@ -686,8 +685,8 @@ def filter_sidebar() -> rx.Component:
         ),
         padding="1.5em",
         border_radius="8px",
-        background="#f9f6f1",
-        border="1px solid #e0d5c7",
+        bg=rx.color("gray", 2),
+        border=f"1px solid {rx.color('gray', 6)}",
         min_width="250px",
     )
 
@@ -922,7 +921,6 @@ def add_job() -> rx.Component:
             max_width="800px",
         ),
         padding="2em",
-        background="#faf8f5",
         min_height="100vh",
     )
 
@@ -939,7 +937,7 @@ def note_timeline_item(note: Dict) -> rx.Component:
                     width="12px",
                     height="12px",
                     border_radius="50%",
-                    background="#8b4513",
+                    bg=rx.color("brown", 9),
                 ),
                 width="12px",
                 flex_shrink="0",
@@ -948,13 +946,13 @@ def note_timeline_item(note: Dict) -> rx.Component:
                 rx.text(
                     rx.moment(note["timestamp"], format="DD/MM/YYYY HH:mm"),
                     size="1",
-                    color="#888",
+                    color=rx.color("gray", 10),
                     weight="medium",
                 ),
                 rx.text(
                     note["note"],
                     size="2",
-                    color="#333",
+                    color=rx.color("gray", 12),
                 ),
                 spacing="1",
                 align_items="start",
@@ -965,7 +963,7 @@ def note_timeline_item(note: Dict) -> rx.Component:
             width="100%",
         ),
         padding_left="1em",
-        border_left="2px solid #e0d5c7",
+        border_left=f"2px solid {rx.color('gray', 6)}",
         padding_bottom="1.5em",
         margin_left="5px",
     )
@@ -1053,7 +1051,7 @@ def job_detail() -> rx.Component:
                             rx.heading(
                                 State.selected_job["job_title"],
                                 size="4",
-                                color="#555",
+                                color=rx.color("gray", 11),
                                 weight="medium",
                             ),
                             rx.divider(margin_y="1em"),
@@ -1064,7 +1062,7 @@ def job_detail() -> rx.Component:
                                     rx.text(
                                         State.selected_job["location"],
                                         size="2",
-                                        color="#666",
+                                        color=rx.color("gray", 11),
                                     ),
                                     spacing="2",
                                 ),
@@ -1073,7 +1071,7 @@ def job_detail() -> rx.Component:
                                     rx.text(
                                         format_date(State.selected_job["application_date"]),
                                         size="2",
-                                        color="#666",
+                                        color=rx.color("gray", 11),
                                     ),
                                     spacing="2",
                                 ),
@@ -1084,7 +1082,7 @@ def job_detail() -> rx.Component:
                                         rx.text(
                                             State.selected_job["salary_range_formatted"],
                                             size="2",
-                                            color="#666",
+                                            color=rx.color("gray", 11),
                                         ),
                                         spacing="2",
                                     ),
@@ -1097,7 +1095,7 @@ def job_detail() -> rx.Component:
                                             State.selected_job["job_url"],
                                             href=State.selected_job["job_url"],
                                             size="2",
-                                            color="#8b4513",
+                                            color=rx.color("brown", 11),
                                             is_external=True,
                                         ),
                                         spacing="2",
@@ -1130,7 +1128,7 @@ def job_detail() -> rx.Component:
                                 rx.text(
                                     "No notes yet. Add your first note below.",
                                     size="2",
-                                    color="#888",
+                                    color=rx.color("gray", 10),
                                     font_style="italic",
                                 ),
                             ),
@@ -1207,7 +1205,7 @@ def job_detail() -> rx.Component:
                                             width="100%",
                                             padding="0.5em",
                                             border_radius="6px",
-                                            background="#f9f6f1",
+                                            bg=rx.color("gray", 2),
                                         ),
                                         spacing="2",
                                         width="100%",
@@ -1215,7 +1213,7 @@ def job_detail() -> rx.Component:
                                     rx.text(
                                         "No templates available. Create templates in the Templates page.",
                                         size="2",
-                                        color="#888",
+                                        color=rx.color("gray", 10),
                                         font_style="italic",
                                     ),
                                 ),
@@ -1223,7 +1221,7 @@ def job_detail() -> rx.Component:
                                 width="100%",
                                 padding="1em",
                                 border_radius="6px",
-                                background="#f5f1ec",
+                                bg=rx.color("gray", 2),
                                 margin_bottom="1em",
                             ),
                             # Note textarea
@@ -1267,7 +1265,7 @@ def job_detail() -> rx.Component:
                     spacing="4",
                     width="100%",
                 ),
-                rx.text("Job not found.", size="4", color="#888"),
+                rx.text("Job not found.", size="4", color=rx.color("gray", 10)),
             ),
             spacing="4",
             padding="2em",
@@ -1328,15 +1326,15 @@ def job_detail() -> rx.Component:
                                         rx.text(
                                             template["content"],
                                             size="2",
-                                            color="#666",
+                                            color=rx.color("gray", 11),
                                         ),
                                         spacing="2",
                                         width="100%",
                                     ),
                                     padding="1em",
                                     border_radius="6px",
-                                    background="#f9f6f1",
-                                    border="1px solid #e0d5c7",
+                                    bg=rx.color("gray", 2),
+                                    border=f"1px solid {rx.color('gray', 6)}",
                                     width="100%",
                                 ),
                             ),
@@ -1346,7 +1344,7 @@ def job_detail() -> rx.Component:
                         rx.text(
                             "No templates available.",
                             size="2",
-                            color="#888",
+                            color=rx.color("gray", 10),
                         ),
                     ),
                     max_height="400px",
@@ -1369,7 +1367,6 @@ def job_detail() -> rx.Component:
             open=State.show_templates_dialog,
         ),
         padding="2em",
-        background="#faf8f5",
         min_height="100vh",
     )
 
@@ -1539,15 +1536,15 @@ def templates_page() -> rx.Component:
                                         rx.text(
                                             template["content"],
                                             size="2",
-                                            color="#666",
+                                            color=rx.color("gray", 11),
                                         ),
                                         spacing="2",
                                         width="100%",
                                     ),
                                     padding="1em",
                                     border_radius="6px",
-                                    background="#f9f6f1",
-                                    border="1px solid #e0d5c7",
+                                    bg=rx.color("gray", 2),
+                                    border=f"1px solid {rx.color('gray', 6)}",
                                     width="100%",
                                 ),
                             ),
@@ -1557,7 +1554,7 @@ def templates_page() -> rx.Component:
                         rx.text(
                             "No templates found. Add one above!",
                             size="2",
-                            color="#888",
+                            color=rx.color("gray", 10),
                             font_style="italic",
                         ),
                     ),
@@ -1600,7 +1597,6 @@ def templates_page() -> rx.Component:
             open=State.show_delete_template_dialog,
         ),
         padding="2em",
-        background="#faf8f5",
         min_height="100vh",
     )
 
@@ -1614,7 +1610,7 @@ def index() -> rx.Component:
             rx.hstack(
                 rx.vstack(
                     rx.heading("AppLog", size="8", margin_bottom="0.5em"),
-                    rx.text("Track your job applications", color="#666"),
+                    rx.text("Track your job applications", color=rx.color("gray", 11)),
                     align_items="start",
                     spacing="2",
                 ),
@@ -1642,7 +1638,7 @@ def index() -> rx.Component:
                     rx.text(
                         f"Applications: {State.total_jobs_count}",
                         size="2",
-                        color="#888",
+                        color=rx.color("gray", 10),
                     ),
                     align_items="end",
                     spacing="2",
@@ -1667,7 +1663,6 @@ def index() -> rx.Component:
             max_width="1400px",
         ),
         padding="2em",
-        background="#faf8f5",
         min_height="100vh",
     )
 

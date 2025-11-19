@@ -9,7 +9,7 @@
 ## 1. User Interface
    - [x] **Design & Layout**
      - [x] Modern, minimal interface in beige/white color palette with dark grey text
-     - [x] Dark mode in dark brown/light brown with grey text (needs refinement)
+     - [x] Full dark mode support with theme-aware colors (light/dark modes fully functional)
      - [x] Main layout with search bar (fully functional)
      - [x] Job list/cards display with hover effects
      - [x] Total applications counter displayed on main page

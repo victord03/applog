@@ -1069,19 +1069,10 @@ def job_detail() -> rx.Component:
                                 ),
                                 rx.hstack(
                                     rx.text("📅 Applied:", weight="bold", size="2"),
-                                    rx.cond(
-                                        State.selected_job["application_date"],
-                                        rx.text(
-                                            format_date(State.selected_job["application_date"]),
-                                            size="2",
-                                            color=rx.color("gray", 11),
-                                        ),
-                                        rx.text(
-                                            "No date set",
-                                            size="2",
-                                            color=rx.color("gray", 9),
-                                            font_style="italic",
-                                        ),
+                                    rx.text(
+                                        format_date(State.selected_job["application_date"]),
+                                        size="2",
+                                        weight="medium",
                                     ),
                                     spacing="2",
                                 ),

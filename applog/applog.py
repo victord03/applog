@@ -224,6 +224,13 @@ class State(rx.State):
         return []
 
     @rx.var
+    def selected_job_application_date_formatted(self) -> str:
+        """Get formatted application date for selected job."""
+        if self.selected_job and self.selected_job.get("application_date"):
+            return format_date(self.selected_job["application_date"])
+        return "No date set"
+
+    @rx.var
     def filtered_templates(self) -> List[Dict]:
         """Filter templates based on search query."""
         if not self.template_search_query:
@@ -1070,7 +1077,7 @@ def job_detail() -> rx.Component:
                                 rx.hstack(
                                     rx.text("📅 Applied:", weight="bold", size="2"),
                                     rx.text(
-                                        format_date(State.selected_job["application_date"]),
+                                        State.selected_job_application_date_formatted,
                                         size="2",
                                         weight="medium",
                                     ),

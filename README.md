@@ -216,6 +216,115 @@
 - `created_at` - Template creation timestamp
 - `updated_at` - Template update timestamp
 
+## Component Organization
+
+### Current Approach: Hybrid Naming Convention
+
+The project uses a **hybrid naming convention** that balances type-based and domain-based organization for components in single files:
+
+**Type-First Prefixes** (for component kind):
+- `_button_*` - All button components (e.g., `_button_save`, `_button_cancel`)
+- `_formatting_*` - All styling dictionaries (e.g., `_formatting_card`, `_formatting_dialog`)
+- `_grid_*` - Grid row components
+- `_section_*` - Major page sections
+
+**Domain-First Prefixes** (for features):
+- `_template_*` - Template system components
+- `_note_*` - Note management components
+- `_job_*` - Job-related components
+
+**Why This Works:**
+- Enables both access patterns: "find all buttons" (`_button_*`) AND "find all template components" (`_template_*`)
+- Works well with IDE search (Cmd+T / Cmd+Shift+O in VSCode)
+- Scales up to ~100 components per file
+- No tooling overhead required
+
+**Example:**
+```python
+# Type-based grouping
+_button_save          # Easy to find all buttons
+_button_cancel
+_button_template_insert
+
+# Domain-based grouping
+_template_selector_list   # Easy to find all template components
+_template_search_input
+_template_settings_tooltip
+```
+
+### File Organization (Current)
+
+```
+applog/
+├── components/
+│   ├── jobs/
+│   │   ├── job_card.py        # Job card display (~120 lines)
+│   │   ├── job_detail.py      # Job detail page (~877 lines, 50+ functions)
+│   │   ├── add_job.py         # Add job form (~325 lines)
+│   │   └── notes.py           # Note timeline components
+│   ├── shared/
+│   │   ├── sidebar.py         # Filter sidebar
+│   │   ├── status_badge.py    # Status badge component
+│   │   └── formatters.py      # Date/currency formatting utilities
+│   └── templates/
+│       └── (planned)          # Template management components
+├── applog.py                  # Main app (State + page assembly)
+├── models/                    # Database models
+└── services/                  # Business logic layer
+```
+
+### Future: Directory Structure (100+ Components)
+
+When the project grows beyond ~100 components, the plan is to reorganize into:
+
+```
+components/
+├── jobs/
+│   ├── detail/
+│   │   ├── buttons.py      # All detail page buttons
+│   │   ├── forms.py        # All form components
+│   │   ├── dialogs.py      # Dialog components
+│   │   └── __init__.py     # Barrel exports (dual access patterns)
+│   ├── list/
+│   │   ├── cards.py
+│   │   └── filters.py
+│   └── __init__.py
+├── shared/
+│   ├── buttons.py          # Shared button components
+│   ├── inputs.py
+│   └── status_badge.py
+└── templates/
+    ├── form.py
+    └── list.py
+```
+
+**Barrel Export Pattern** (in `__init__.py`):
+```python
+# Feature-domain exports (primary)
+from .buttons import button_save, button_cancel, button_edit
+
+# Component-type grouped exports (for refactoring)
+__all_buttons__ = [button_save, button_cancel, button_edit]
+__all_forms__ = [...]
+```
+
+This provides:
+- **Feature-domain imports**: `from components.jobs.detail import button_save`
+- **Type-based refactoring**: `from components.jobs.detail import __all_buttons__`
+
+### Design Philosophy
+
+**The Trade-off**: You cannot optimize for both type-based AND domain-based access with a single hierarchy. The hybrid naming convention is a pragmatic compromise that works well for small-to-medium projects.
+
+**Scaling Path**:
+1. **< 100 components**: Hybrid naming in flat files ✅ (current)
+2. **100-500 components**: Directory structure + barrel exports (planned)
+3. **500+ components**: Add component catalog + Storybook (future)
+
+**Key Principle**: Don't over-engineer early. The current approach is optimal for the project's scale.
+
+**Full Details**: See `LESSONS_LEARNED.md` "Component Organization" section for the complete analysis of type vs. domain trade-offs, barrel export examples, and production best practices.
+
 ---
 
 # **Application Flow**

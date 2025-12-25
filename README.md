@@ -13,10 +13,12 @@
      - [x] Main layout with search bar (fully functional)
      - [x] Job list/cards display with hover effects
      - [x] Total applications counter displayed on main page
+     - [ ] Sort jobs by latest/newest first on main screen (Issue #1)
    - [x] **Search & Filtering**
      - [x] Search field (main field, across the screen)
      - [x] Filter sidebar with dropdowns (company, status, location)
      - [ ] Add option to filter by location in the search bar
+     - [ ] Display filtered count in applications counter (Issue #8)
    - [x] **Forms & Input**
      - [x] Add job form (separate page at /add-job with all fields)
      - [x] Vertically expandable text fields for description and notes
@@ -25,6 +27,11 @@
      - [x] Delete job from job detail page with confirmation dialog
      - [ ] Edit/delete buttons on job cards
      - [ ] Optional field to store apartment offer links (multiple links with '+ Add link' UI)
+     - [ ] Edit job details functionality (Issue #3)
+     - [ ] Auto-populate application date to today by default (Issue #4)
+     - [ ] Reset edit mode when exiting job details page (Issue #5)
+     - [ ] Add "Clear Fields" button in job creation form (Issue #6)
+     - [ ] Auto-suggest/auto-fill for location, job title, and company fields (Issue #7)
    - [x] **Note History & Timeline**
      - [x] Vertical timeline display showing timestamped notes
      - [x] Notes sorted in reverse chronological order (newest first)
@@ -46,6 +53,8 @@
      - [x] "View All Templates" dialog
      - [x] Auto-clear success messages after 3 seconds
      - [x] Settings icon link to Templates Management page
+     - [ ] Handle note templates in job creation form (Issue #2)
+       - Decision needed: Add template selector to creation form OR remove notes field from creation entirely
 
 ## 2. Core Application Logic
 
@@ -127,7 +136,23 @@
    - [ ] **Documentation**
      - [ ] Usage documentation
 
-## 5. Future Services (v2+)
+## 5. Code Quality & Refactoring
+   - [ ] **Component Organization**
+     - [ ] Create `applog/components/` directory structure
+     - [ ] Extract reusable UI components from `applog.py`
+       - [ ] Split `job_card()` into separate component module
+       - [ ] Split `job_detail()` into separate component module with sub-components
+       - [ ] Split `add_job()` form into separate component module
+       - [ ] Split `templates_page()` into separate component module
+       - [ ] Split `index()` main page into smaller components
+       - [ ] Extract `note_timeline_item()` and related note components
+       - [ ] Extract filter sidebar components
+       - [ ] Extract search bar component
+     - [ ] Organize components by feature (jobs/, templates/, shared/)
+     - [ ] Improve code readability and maintainability
+     - [ ] Make components more reusable across pages
+
+## 6. Future Services (v2+)
    - [ ] **Email Notifications**
      - [ ] Create email notifications after a certain period of time
      - [ ] Email response parsing to update job status automatically

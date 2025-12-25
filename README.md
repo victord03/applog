@@ -137,20 +137,33 @@
      - [ ] Usage documentation
 
 ## 5. Code Quality & Refactoring
-   - [ ] **Component Organization**
-     - [ ] Create `applog/components/` directory structure
-     - [ ] Extract reusable UI components from `applog.py`
-       - [ ] Split `job_card()` into separate component module
-       - [ ] Split `job_detail()` into separate component module with sub-components
-       - [ ] Split `add_job()` form into separate component module
-       - [ ] Split `templates_page()` into separate component module
-       - [ ] Split `index()` main page into smaller components
-       - [ ] Extract `note_timeline_item()` and related note components
-       - [ ] Extract filter sidebar components
-       - [ ] Extract search bar component
-     - [ ] Organize components by feature (jobs/, templates/, shared/)
-     - [ ] Improve code readability and maintainability
-     - [ ] Make components more reusable across pages
+   - [x] **Component Organization** (In Progress - Branch: `refactor/component-extraction`)
+     - [x] Create `applog/components/` directory structure
+       - [x] `components/jobs/` - Job-related components
+       - [x] `components/shared/` - Shared/reusable components
+       - [x] `components/templates/` - Template management components (planned)
+     - [x] **Extract reusable UI components from `applog.py`** (80% complete)
+       - [x] Job card component → `jobs/job_card.py` (with visual docstrings)
+       - [x] Job detail page → `jobs/job_detail.py` (877 lines, ~50 functions, with visual docstrings)
+       - [x] Add job form → `jobs/add_job.py` (with visual docstrings)
+       - [x] Note timeline → `jobs/notes.py` (with visual docstrings)
+       - [x] Filter sidebar → `shared/sidebar.py` (with visual docstrings)
+       - [x] Status badge → `shared/status_badge.py`
+       - [x] Formatters → `shared/formatters.py` (date formatting utilities)
+       - [ ] Templates page → `templates/template_page.py` (planned)
+       - [ ] Job list wrapper → `jobs/job_list.py` (planned)
+       - [ ] Main index page → `pages/index.py` or `main/home.py` (planned)
+       - [ ] Search bar component (planned)
+     - [x] **Code Quality Improvements**
+       - [x] Naming convention: `_button_*` prefix for all buttons (type-first organization)
+       - [x] Naming convention: `_formatting_*` prefix for all styling dictionaries
+       - [x] Visual docstrings added to all component functions (emoji + description + visual example)
+       - [x] Component organization documented in LESSONS.md (type vs. domain strategies)
+     - [ ] **Remaining Work**
+       - [ ] Wire components into `applog.py` (replace inline functions with imports)
+       - [ ] Extract remaining pages (templates, index)
+       - [ ] Test full application after refactoring
+       - [ ] Optional: Split large files into sub-modules if needed
 
 ## 6. Future Services (v2+)
    - [ ] **Email Notifications**
@@ -242,63 +255,3 @@
 - `/job/[id]` - Job detail page with note history, status editing, add note with template selector, and delete job functionality
 - `/templates` - Templates Management page for creating, editing, searching, and deleting note templates
 
----
-
-# **Lessons Learned**
-
-## Reflex Var Handling in Templates
-
-### Issue
-**Reflex `Var` objects cannot be used with Python functions that contain conditional checks or type operations on the Var parameter itself.** Vars are reactive proxy objects, not plain values, and conditionals like `if isinstance(var, str)` or `if var` evaluate the Var object, not its runtime value.
-
-### Symptoms
-- Python functions return empty strings or default values
-- Formatting functions fail silently in `rx.foreach` loops
-- Dictionary `.get()` methods return None in templates
-
-### Root Cause
-When you pass a Reflex `Var` to a Python function that checks the parameter type or truthiness before converting to string, the check evaluates the Var wrapper object instead of the actual data. For example:
-```python
-def format_value(val):
-    if not val:  # This checks the Var object, not its value!
-        return ""
-    return str(val).upper()
-```
-
-### Solutions
-
-1. **Backend Formatting (Preferred)**
-   - Format data in the model's `to_dict()` method or service layer
-   - Return pre-formatted fields alongside raw data
-   - Example: Add `salary_range_formatted` field in addition to `salary_range`
-   - **Use for:** Date formatting, currency formatting, custom transformations
-
-2. **Reflex Built-in Components**
-   - Use `rx.moment()` for datetime formatting instead of Python `strftime()`
-   - Use `rx.cond()` for conditional rendering instead of Python `if`
-   - **Use for:** Dates, times, conditional UI elements
-
-3. **Direct Dictionary Access in Templates**
-   - Use `note["field"]` instead of `note.get("field", "")` in `rx.foreach` loops
-   - The `.get()` method doesn't work reliably with Vars
-   - **Use for:** Accessing nested dictionary fields in foreach loops
-
-4. **String Conversion Without Conditionals**
-   - If you must use Python functions, convert to string immediately without checking:
-   ```python
-   def format_value(val):
-       str_val = str(val)  # Convert first, no conditionals on the Var parameter
-       if str_val == "":   # Now check the string value
-           return ""
-       return str_val.upper()
-   ```
-
-### Common Operations Affected
-- **Date/time formatting** → Use `rx.moment()` or backend formatting
-- **Currency/number formatting** → Backend formatting in `to_dict()`
-- **String manipulation with validation** → Backend formatting or immediate string conversion
-- **Conditional rendering** → Use `rx.cond()` instead of Python `if`
-- **Dictionary field access in loops** → Use `dict["key"]` not `dict.get("key")`
-
-### Key Takeaway
-**When working with Reflex templates and reactive data, prefer backend formatting or Reflex-native components over Python utility functions.** This avoids Var serialization issues and improves maintainability.

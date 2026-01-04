@@ -861,9 +861,19 @@ app = rx.App(
         accent_color="brown",
     )
 )
+
+# Page wrappers to pass State to component functions
+def add_job_page() -> rx.Component:
+    """Wrapper for add job page component."""
+    return add_job.form(State)
+
+def job_detail_page() -> rx.Component:
+    """Wrapper for job detail page component."""
+    return job_detail.render_ui(State)
+
 app.add_page(index, on_load=State.load_index_page)
-app.add_page(add_job.form, route="/add-job", on_load=State.load_add_job_page)
-app.add_page(job_detail.render_ui, route="/job/[job_id]", on_load=State.load_job)
+app.add_page(add_job_page, route="/add-job", on_load=State.load_add_job_page)
+app.add_page(job_detail_page, route="/job/[job_id]", on_load=State.load_job)
 app.add_page(templates_page, route="/templates", on_load=State.load_templates_page)
 
 # Initialize database tables on app startup

@@ -141,28 +141,33 @@
      - [x] Create `applog/components/` directory structure
        - [x] `components/jobs/` - Job-related components
        - [x] `components/shared/` - Shared/reusable components
+       - [x] `components/main/` - Main page components
        - [x] `components/templates/` - Template management components (planned)
-     - [x] **Extract reusable UI components from `applog.py`** (80% complete)
+     - [x] **Extract reusable UI components from `applog.py`** (92% complete - **App runs successfully!**)
        - [x] Job card component → `jobs/job_card.py` (with visual docstrings)
        - [x] Job detail page → `jobs/job_detail.py` (877 lines, ~50 functions, with visual docstrings)
        - [x] Add job form → `jobs/add_job.py` (with visual docstrings)
        - [x] Note timeline → `jobs/notes.py` (with visual docstrings)
        - [x] Filter sidebar → `shared/sidebar.py` (with visual docstrings)
-       - [x] Status badge → `shared/status_badge.py`
+       - [x] Status badge → `shared/status_badge.py` (with visual docstrings)
+       - [x] Search bar → `shared/search_bar.py` (with visual docstrings)
        - [x] Formatters → `shared/formatters.py` (date formatting utilities)
+       - [x] Job list wrapper → `jobs/job_list.py` (with visual docstrings)
+       - [x] Main index page → `main/index_page.py` (with visual docstrings)
        - [ ] Templates page → `templates/template_page.py` (planned)
-       - [ ] Job list wrapper → `jobs/job_list.py` (planned)
-       - [ ] Main index page → `pages/index.py` or `main/home.py` (planned)
-       - [ ] Search bar component (planned)
      - [x] **Code Quality Improvements**
        - [x] Naming convention: `_button_*` prefix for all buttons (type-first organization)
        - [x] Naming convention: `_formatting_*` prefix for all styling dictionaries
        - [x] Visual docstrings added to all component functions (emoji + description + visual example)
        - [x] Component organization documented in LESSONS.md (type vs. domain strategies)
+     - [x] **Module Integration** (✅ Complete)
+       - [x] Configured `__init__.py` files for proper module exports
+       - [x] Fixed import patterns (direct function calls vs. module.function access)
+       - [x] Created page wrapper functions in `applog.py` for state injection
+       - [x] Cleared stale bytecode cache and resolved import errors
      - [ ] **Remaining Work**
-       - [ ] Wire components into `applog.py` (replace inline functions with imports)
-       - [ ] Extract remaining pages (templates, index)
-       - [ ] Test full application after refactoring
+       - [ ] Extract templates page into component module (`templates/template_page.py`)
+       - [ ] Full integration testing of all features
        - [ ] Optional: Split large files into sub-modules if needed
 
 ## 6. Future Services (v2+)
@@ -261,11 +266,15 @@ applog/
 │   │   ├── job_card.py        # Job card display (~120 lines)
 │   │   ├── job_detail.py      # Job detail page (~877 lines, 50+ functions)
 │   │   ├── add_job.py         # Add job form (~325 lines)
+│   │   ├── job_list.py        # Job list wrapper component
 │   │   └── notes.py           # Note timeline components
 │   ├── shared/
 │   │   ├── sidebar.py         # Filter sidebar
+│   │   ├── search_bar.py      # Search bar component
 │   │   ├── status_badge.py    # Status badge component
 │   │   └── formatters.py      # Date/currency formatting utilities
+│   ├── main/
+│   │   └── index_page.py      # Main index page layout and components
 │   └── templates/
 │       └── (planned)          # Template management components
 ├── applog.py                  # Main app (State + page assembly)

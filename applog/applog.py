@@ -1,7 +1,7 @@
 """AppLog - Job Application Tracker"""
 
 import reflex as rx
-from typing import List, Dict
+from typing import List, Dict, Generator
 from applog.services.job_service import create_job, add_note, delete_job
 from applog.services.template_service import (
     create_template,
@@ -16,7 +16,7 @@ from applog.components.jobs import (
     job_card,
     job_detail,
     add_job,
-    notes
+    job_list
 )
 
 from applog.components.shared import (
@@ -25,6 +25,8 @@ from applog.components.shared import (
     status_badge,
     sidebar
 )
+
+from applog.components.main import index_page
 
 
 # Mock data for demonstration
@@ -204,6 +206,7 @@ class State(rx.State):
     @rx.var
     def unique_companies(self) -> List[str]:
         """Get unique company names."""
+
         return ["All Companies"] + sorted(
             list(set(job["company_name"] for job in self.jobs))
         )
@@ -211,11 +214,13 @@ class State(rx.State):
     @rx.var
     def unique_statuses(self) -> List[str]:
         """Get unique statuses."""
+
         return ["All Statuses"] + sorted(list(set(job["status"] for job in self.jobs)))
 
     @rx.var
     def unique_locations(self) -> List[str]:
         """Get unique locations."""
+
         return ["All Locations"] + sorted(
             list(set(job["location"] for job in self.jobs))
         )
@@ -223,33 +228,44 @@ class State(rx.State):
     @rx.var
     def selected_job(self) -> Dict | None:
         """Get the currently selected job for detail view."""
+
         for job in self.jobs:
+
             if job.get("id") == self.selected_job_id:
                 return job
+
         return None
 
     @rx.var
     def selected_job_notes(self) -> List[Dict]:
         """Get notes for the selected job with proper type annotation for foreach."""
+
         if self.selected_job and self.selected_job.get("notes"):
+
             # Return in reverse chronological order (newest first)
             return list(reversed(self.selected_job["notes"]))
+
         return []
 
     @rx.var
     def selected_job_application_date_formatted(self) -> str:
         """Get formatted application date for selected job."""
+
         if self.selected_job and self.selected_job.get("application_date"):
+
             return formatters.format_date(self.selected_job["application_date"])
+
         return "No date set"
 
     @rx.var
     def filtered_templates(self) -> List[Dict]:
         """Filter templates based on search query."""
+
         if not self.template_search_query:
             return self.templates
 
         query = self.template_search_query.lower()
+
         return [
             t
             for t in self.templates
@@ -259,50 +275,63 @@ class State(rx.State):
     @rx.var
     def selected_template(self) -> Dict | None:
         """Get the currently selected template."""
+
         for template in self.templates:
+
             if template.get("id") == self.selected_template_id:
                 return template
+
         return None
 
-    def load_jobs_from_db(self):
+    def load_jobs_from_db(self) -> None:
         """Load all jobs from database and convert to dict format."""
+
         db = SessionLocal()
+
         try:
             job_records = db.query(JobApplication).all()
             self.jobs = [job.to_dict() for job in job_records]
+
         finally:
             db.close()
 
-    def load_index_page(self):
+    def load_index_page(self) -> None:
         """Handler for index page load - loads jobs and clears messages."""
         self.load_jobs_from_db()
         self.form_message = ""  # Clear any form messages
         self.form_message_type = ""
 
-    def load_add_job_page(self):
+    def load_add_job_page(self) -> None:
         """Handler for add job page load - clears form messages."""
         self.form_message = ""
         self.form_message_type = ""
 
-    def load_job(self):
+    def load_job(self) -> Dict | None:
         """Load a job by ID from URL parameter."""
+
         # Load fresh data from database
         self.load_jobs_from_db()
         self.load_templates_from_db()
+
         # Clear template search query for fresh page load
         self.template_search_query = ""
+
         # Access the route parameter from router state
         job_id = self.router.page.params.get("job_id", "0")
+
         try:
             self.selected_job_id = int(job_id)
+
             # Load current status for editing
             if self.selected_job:
                 self.detail_status = self.selected_job.get("status", "Applied")
+
         except (ValueError, TypeError):
             self.selected_job_id = 0
 
-    def handle_submit(self):
+    def handle_submit(self) -> None:
         """Handle job form submission."""
+
         # 1. Validate required fields
         if not self.form_company_name or not self.form_job_url or not self.form_job_title:
             self.form_message = "Please fill in all required fields (Company, Title, URL)"
@@ -317,6 +346,7 @@ class State(rx.State):
         db_session = SessionLocal()
 
         try:
+
             # 4. Attempt to create job
             result = create_job(
                 session=db_session,
@@ -338,16 +368,18 @@ class State(rx.State):
             return rx.redirect("/")
 
         except ValueError as e:
+
             # 6. Error - show message, keep form data for user to fix
             self.form_message = f"Error: {str(e)}"
             self.form_message_type = "error"
             # Don't clear form or redirect - user needs to fix the issue
 
         finally:
+
             # 7. Always close the session
             db_session.close()
 
-    def clear_form(self):
+    def clear_form(self) -> None:
         """Reset all form fields to defaults."""
         self.form_company_name = ""
         self.form_job_title = ""
@@ -359,26 +391,33 @@ class State(rx.State):
         self.form_salary_range = ""
         self.form_notes = ""
 
-    def handle_add_note(self):
+    def handle_add_note(self) -> Generator[Dict, None, None]:
         """Handle adding a note to the current job."""
+
         # Validate note text
         if not self.new_note_text or not self.new_note_text.strip():
             return  # Don't add empty notes
 
         db = SessionLocal()
         try:
+
             # Add note to database
             result = add_note(db, self.selected_job_id, self.new_note_text.strip())
 
             if result:
+
                 # Clear the input
                 self.new_note_text = ""
+
                 # Clear template search to avoid any filtering issues
                 self.template_search_query = ""
+
                 # Reload jobs from database to get updated notes
                 self.load_jobs_from_db()
+
                 # Force state refresh by yielding
                 yield
+
         except Exception as e:
             self.form_message = f"Error adding note: {str(e)}"
             self.form_message_type = "error"
@@ -395,6 +434,7 @@ class State(rx.State):
 
         db = SessionLocal()
         try:
+
             # Convert status string to Enum
             status_enum = ApplicationStatus(self.detail_status)
 
@@ -402,10 +442,13 @@ class State(rx.State):
             result = update_job(db, self.selected_job_id, {"status": status_enum})
 
             if result:
+
                 # Reload jobs from database
                 self.load_jobs_from_db()
+
                 # Exit edit mode
                 self.status_edit_mode = False
+
         except Exception as e:
             self.form_message = f"Error updating status: {str(e)}"
             self.form_message_type = "error"
@@ -423,11 +466,9 @@ class State(rx.State):
                 self.show_delete_dialog = False
                 return rx.redirect("/")
             else:
-                # todo form_message usage ?
                 self.form_message = "Operation aborted"
                 self.form_message_type = "error"
         except Exception as e:
-            # todo form_message usage ?
             self.form_message = f"Error deleting job: {str(e)}"
             self.form_message_type = "error"
         finally:
@@ -545,17 +586,6 @@ class State(rx.State):
         self.template_edit_mode = False
         self.selected_template_id = 0
 
-
-def job_list() -> rx.Component:
-    """Display list of job cards."""
-    return rx.box(
-        rx.vstack(
-            rx.foreach(State.filtered_jobs, job_card.render_ui),
-            spacing="4",
-            width="100%",
-        ),
-        width="100%",
-    )
 
 
 def templates_page() -> rx.Component:
@@ -790,69 +820,8 @@ def templates_page() -> rx.Component:
 
 def index() -> rx.Component:
     """Main application page."""
-    return rx.container(
-        rx.color_mode.button(position="top-right"),
-        rx.vstack(
-            # Header with Add Job button
-            rx.hstack(
-                rx.vstack(
-                    rx.heading("AppLog", size="8", margin_bottom="0.5em"),
-                    rx.text("Track your job applications", color=rx.color("gray", 11)),
-                    align_items="start",
-                    spacing="2",
-                ),
-                rx.spacer(),
-                rx.vstack(
-                    rx.hstack(
-                        rx.link(
-                            rx.button(
-                                "Templates",
-                                size="3",
-                                variant="soft",
-                            ),
-                            href="/templates",
-                        ),
-                        rx.link(
-                            rx.button(
-                                "+ Add Job",
-                                size="3",
-                                variant="solid",
-                            ),
-                            href="/add-job",
-                        ),
-                        spacing="3",
-                    ),
-                    rx.text(
-                        f"Applications: {State.total_jobs_count}",
-                        size="2",
-                        color=rx.color("gray", 10),
-                    ),
-                    align_items="end",
-                    spacing="2",
-                ),
-                width="100%",
-                align_items="center",
-                margin_bottom="2em",
-            ),
-            # Search bar
-            search_bar(State),
 
-            # Main content area with filters and job list
-            rx.hstack(
-                sidebar.sb_filter(State),
-                job_list(),
-                spacing="6",
-                align_items="start",
-                width="100%",
-                margin_top="2em",
-            ),
-            spacing="4",
-            padding="2em",
-            max_width="1400px",
-        ),
-        padding="2em",
-        min_height="100vh",
-    )
+    return index_page.render_ui(State)
 
 
 app = rx.App(

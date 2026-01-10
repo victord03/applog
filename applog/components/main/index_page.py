@@ -31,9 +31,18 @@ _formatting_main_page_heading_stack = {
 }
 
 def _main_page_heading_text() -> rx.Component:
+    """
+    📝 Renders the tagline text below the main heading.
+    Visual: "Track your job applications" (gray text)
+    """
     return rx.text("Track your job applications", color=rx.color("gray", 11))
 
 def _main_page_heading() -> rx.Component:
+    """
+    🏠 Renders the main page heading with title and tagline.
+    Visual: [AppLog (large heading)]
+            [Track your job applications (subtext)]
+    """
     return rx.vstack(
 
         rx.heading("AppLog", size="8", margin_bottom="0.5em"),
@@ -44,6 +53,10 @@ def _main_page_heading() -> rx.Component:
     )
 
 def _main_page_add_button() -> rx.Component:
+    """
+    ➕ Renders the "Add Job" button linking to /add-job.
+    Visual: [+ Add Job] (solid button)
+    """
     return rx.link(
         rx.button(
             "+ Add Job",
@@ -54,6 +67,10 @@ def _main_page_add_button() -> rx.Component:
     )
 
 def _main_page_total_applications_display(state: rx.State) -> rx.Component:
+    """
+    🔢 Renders the total applications counter.
+    Visual: "Applications: 42" (small gray text showing count)
+    """
     return rx.text(
         f"Applications: {state.total_jobs_count}",
         size="2",
@@ -66,6 +83,10 @@ _formatting_main_page_templates_button = {
 }
 
 def _main_page_templates_link() -> rx.Component:
+    """
+    📋 Renders the "Templates" button linking to /templates.
+    Visual: [Templates] (soft button)
+    """
     return rx.link(
         rx.button(
             "Templates",
@@ -84,6 +105,11 @@ _formatting_main_page_and_add_job_button = {
 
 
 def _render_heading(state: rx.State) -> rx.Component:
+    """
+    🎯 Renders the complete main page header section.
+    Visual: [AppLog heading + tagline]    [spacer]    [[Templates] [+ Add Job]]
+                                                       [Applications: 42]
+    """
     return rx.hstack(
                 _main_page_heading(),
 
@@ -110,6 +136,11 @@ def _render_heading(state: rx.State) -> rx.Component:
 
 
 def render_ui(state: rx.State) -> rx.Component:
+    """
+    🏠 Main application page with job list, search, and filters.
+    Visual: Full index page container with color mode button, header, search bar,
+            sidebar filters, and job cards list.
+    """
     return rx.container(
 
         rx.color_mode.button(position="top-right"),

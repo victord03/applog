@@ -92,7 +92,11 @@ def _section_required_fields(state: rx.State):
 
         _required_field_job_url(state),
 
-        rx.divider(margin_top="1em", margin_bottom="1em")
+        rx.divider(margin_top="1em", margin_bottom="1em"),
+
+        spacing="4",
+        align_items="start",
+        width="100%",
     )
 
 def _optional_field_location(state: rx.State):
@@ -296,6 +300,9 @@ def _section_optional_fields(state: rx.State):
 
         _optional_field_message_display(state),
 
+        spacing="4",
+        align_items="start",
+        width="100%",
     )
 
 def _job_form(state: rx.State):
@@ -334,7 +341,7 @@ def form(state: rx.State) -> rx.Component:
 
             spacing="4",
             padding="2em",
-            max_width="800px",
+            max_width="900px",
         ),
         padding="2em",
         min_height="100vh",

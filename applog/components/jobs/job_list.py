@@ -12,8 +12,11 @@ _formatting_job_card_box = {
 }
 
 def render_ui(state: rx.State) -> rx.Component:
-    """Display list of job cards."""
-
+    """
+    📇 Renders the list of job application cards.
+    Visual: Vertical stack of job cards (company name, title, status, dates).
+            Each card is rendered by job_card.render_ui().
+    """
     return rx.box(
         rx.vstack(
             rx.foreach(state.filtered_jobs, job_card.render_ui),

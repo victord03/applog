@@ -1,6 +1,6 @@
 import reflex as rx
 
-def _job_form_header():
+def _job_form_header(state: rx.State):
     """
     📋 Renders the form page header.
     Visual: [Add Job Application   ← Back to List button]
@@ -8,14 +8,14 @@ def _job_form_header():
     return rx.hstack(
         rx.heading("Add Job Application", size="7"),
         rx.spacer(),
-        rx.link(
-            rx.button(
-                "← Back to List",
-                variant="soft",
-                size="2",
-            ),
-            href="/",
+
+        rx.button(
+            "← Back to List",
+            variant="soft",
+            size="2",
+            on_click=state.handle_cancel_job_creation,
         ),
+
         width="100%",
         align_items="center",
         margin_bottom="2em",
@@ -257,14 +257,12 @@ def _form_actions(state: rx.State):
     """
     return rx.hstack(
 
-        rx.link(
-            rx.button(
-                "Cancel",
-                variant="soft",
-                size="3",
-                color_scheme="gray",
-            ),
-            href="/",
+        rx.button(
+            "Cancel",
+            variant="soft",
+            size="3",
+            color_scheme="gray",
+            on_click=state.handle_cancel_job_creation,
         ),
         rx.spacer(),
         rx.button(
@@ -296,7 +294,7 @@ def _section_optional_fields(state: rx.State):
 
         _optional_field_description(state),
 
-        _optional_field_notes(state),
+        # _optional_field_notes(state),  removed during refactoring. Keeping it in case I want to restore it.
 
         _optional_field_message_display(state),
 
@@ -327,22 +325,53 @@ def _job_form(state: rx.State):
         padding="2em",
     )
 
-def form(state: rx.State) -> rx.Component:
-    """Add job application page."""
-    return rx.container(
-
-        rx.color_mode.button(position="top-right"),
-
-        rx.vstack(
-
-            _job_form_header(),
-
-            _job_form(state),
-
-            spacing="4",
-            padding="2em",
-            max_width="900px",
+def _cancel_confirmation_dialog(state: rx.State):
+    return rx.alert_dialog.root(
+        rx.alert_dialog.content(
+            rx.alert_dialog.title("Discard Job Application?"),
+            rx.alert_dialog.description(
+                "You have unsaved changes. Are you sure you want to leave without saving?"
+            ),
+            rx.flex(
+                rx.alert_dialog.cancel(
+                    rx.button(
+                        "No, Stay",
+                        variant="soft",
+                        on_click=state.dismiss_cancel_dialog,
+                    ),
+                ),
+                rx.alert_dialog.action(
+                    rx.button(
+                        "Yes, Discard",
+                        color_scheme="red",
+                        on_click=state.confirm_cancel_job,
+                    ),
+                ),
+                spacing="3",
+            ),
         ),
-        padding="2em",
-        min_height="100vh",
+        open=state.show_cancel_job_dialog,
+    )
+
+def render_ui(state: rx.State) -> rx.Component:
+    """Add job application page."""
+    return rx.fragment(
+        rx.container(
+
+            rx.color_mode.button(position="top-right"),
+
+            rx.vstack(
+
+                _job_form_header(state),
+
+                _job_form(state),
+
+                spacing="4",
+                padding="2em",
+                max_width="900px",
+            ),
+            padding="2em",
+            min_height="100vh",
+        ),
+        _cancel_confirmation_dialog(state)
     )

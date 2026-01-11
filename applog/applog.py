@@ -1,31 +1,43 @@
 """AppLog - Job Application Tracker"""
 
 import reflex as rx
+
+# Typing imports
 from typing import List, Dict, Generator
-from applog.services.job_service import create_job, add_note, delete_job
+
+# DB-related imports
+from applog.database import SessionLocal, init_db
+from applog.models.job_application import JobApplication
+
+# Datetime
+from datetime import datetime
+
+# Single component-module imports
+from applog.components.templates import template_list
+from applog.components.shared import formatters
+from applog.components.main import index_page
+
+# Grouped component-module imports
+from applog.services.job_service import (
+    create_job,
+    add_note,
+    delete_job
+)
 from applog.services.template_service import (
     create_template,
     get_all_templates,
     update_template,
     delete_template,
 )
-from applog.database import SessionLocal, init_db
-from applog.models.job_application import JobApplication
-
 from applog.components.jobs import (
     job_detail,
     add_job,
 )
 
-from applog.components.templates import template_list
-
-from applog.components.shared import formatters
-
-from applog.components.main import index_page
-
-
 class State(rx.State):
     """The app state."""
+
+    # STORED STATE VARIABLES
 
     # Search and filter state
     search_query: str = ""
@@ -43,9 +55,9 @@ class State(rx.State):
     form_location: str = ""
     form_description: str = ""
     form_status: str = "Applied"
-    form_application_date: str = ""
+    form_application_date: str
     form_salary_range: str = ""
-    form_notes: str = ""
+    # form_notes: str = ""
 
     # Job detail page state
     selected_job_id: int = 0
@@ -60,6 +72,9 @@ class State(rx.State):
     # Confirmation dialog for deletion operation
     show_delete_dialog: bool = False
 
+    # Confirmation dialog for exiting job creation without save
+    show_cancel_job_dialog: bool = False
+
     # Template management state
     templates: List[Dict] = []
     template_search_query: str = ""
@@ -72,6 +87,7 @@ class State(rx.State):
     show_templates_dialog: bool = False
     show_delete_template_dialog: bool = False
 
+    # COMPUTED PROPERTIES (@rx.var)
     @rx.var
     def total_jobs_count(self) -> int:
         """Get total number of job applications."""
@@ -98,7 +114,9 @@ class State(rx.State):
             ]
 
         # Apply status filter
-        if self.selected_status != "All Statuses":
+        if self.selected_status == "All Statuses":
+            result = [job for job in result if job["status"] not in ["Rejected", "Withdrawn", "No Response"]]
+        elif self.selected_status != "All Statuses":
             result = [job for job in result if job["status"] == self.selected_status]
 
         # Apply location filter
@@ -108,6 +126,11 @@ class State(rx.State):
             ]
 
         return result
+
+    @rx.var
+    def filtered_jobs_count(self) -> int:
+        """Get total number of filtered job applications."""
+        return len(self.filtered_jobs)
 
     @rx.var
     def unique_companies(self) -> List[str]:
@@ -189,13 +212,14 @@ class State(rx.State):
 
         return None
 
+    # EVENT HANDLERS
     def load_jobs_from_db(self) -> None:
         """Load all jobs from database and convert to dict format."""
 
         db = SessionLocal()
 
         try:
-            job_records = db.query(JobApplication).all()
+            job_records = db.query(JobApplication).order_by(JobApplication.application_date.desc()).all()
             self.jobs = [job.to_dict() for job in job_records]
 
         finally:
@@ -206,9 +230,11 @@ class State(rx.State):
         self.load_jobs_from_db()
         self.form_message = ""  # Clear any form messages
         self.form_message_type = ""
+        self.status_edit_mode = False
 
     def load_add_job_page(self) -> None:
         """Handler for add job page load - clears form messages."""
+        self.clear_form()
         self.form_message = ""
         self.form_message_type = ""
 
@@ -221,6 +247,9 @@ class State(rx.State):
 
         # Clear template search query for fresh page load
         self.template_search_query = ""
+
+        # Reset edit mode on page load
+        self.status_edit_mode = False
 
         # Access the route parameter from router state
         job_id = self.router.page.params.get("job_id", "0")
@@ -235,7 +264,7 @@ class State(rx.State):
         except (ValueError, TypeError):
             self.selected_job_id = 0
 
-    def handle_submit(self) -> None:
+    def handle_submit(self):
         """Handle job form submission."""
 
         # 1. Validate required fields
@@ -263,7 +292,7 @@ class State(rx.State):
                     "location": self.form_location,
                     "description": self.form_description,
                     "salary_range": self.form_salary_range,
-                    "notes": self.form_notes
+                    # "notes": self.form_notes  Removed during refactoring. Keeping it for a while
                 }
             )
 
@@ -293,9 +322,39 @@ class State(rx.State):
         self.form_location = ""
         self.form_description = ""
         self.form_status = "Applied"
-        self.form_application_date = ""
+        self.form_application_date = datetime.today().strftime("%Y-%m-%d")
         self.form_salary_range = ""
-        self.form_notes = ""
+        # self.form_notes = ""  Removed during refactoring. Keeping it for a while
+
+    def handle_cancel_job_creation(self) -> None:
+        """Handle cancel button click - show confirmation if form has data."""
+        # Check if any form fields have been filled
+        has_data = any([
+            self.form_company_name,
+            self.form_job_title,
+            self.form_job_url,
+            self.form_location,
+            self.form_description,
+            self.form_salary_range,
+            # self.form_notes, Removed during refactoring. Keeping it for a while.
+        ])
+
+        if has_data:
+            # Show confirmation dialog
+            self.show_cancel_job_dialog = True
+        else:
+            # No data, just navigate away
+            yield rx.redirect("/")
+
+    def confirm_cancel_job(self):
+        """Confirm cancellation - clear form and navigate away."""
+        self.clear_form()
+        self.show_cancel_job_dialog = False
+        yield rx.redirect("/")
+
+    def dismiss_cancel_dialog(self) -> None:
+        """Dismiss the cancel confirmation dialog."""
+        self.show_cancel_job_dialog = False
 
     def handle_add_note(self) -> Generator[Dict, None, None]:
         """Handle adding a note to the current job."""
@@ -513,7 +572,7 @@ app = rx.App(
 # Page wrappers to pass State to component functions
 def add_job_page() -> rx.Component:
     """Wrapper for add job page component."""
-    return add_job.form(State)
+    return add_job.render_ui(State)
 
 def job_detail_page() -> rx.Component:
     """Wrapper for job detail page component."""

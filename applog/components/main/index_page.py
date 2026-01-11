@@ -72,7 +72,7 @@ def _main_page_total_applications_display(state: rx.State) -> rx.Component:
     Visual: "Applications: 42" (small gray text showing count)
     """
     return rx.text(
-        f"Applications: {state.total_jobs_count}",
+        f"Showing {state.filtered_jobs_count} out of {state.total_jobs_count} applications",
         size="2",
         color=rx.color("gray", 10),
     )

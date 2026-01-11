@@ -13,12 +13,13 @@
      - [x] Main layout with search bar (fully functional)
      - [x] Job list/cards display with hover effects
      - [x] Total applications counter displayed on main page
-     - [ ] Sort jobs by latest/newest first on main screen (Issue #1)
+     - [x] Sort jobs by latest/newest first on main screen (by application_date DESC)
    - [x] **Search & Filtering**
      - [x] Search field (main field, across the screen)
      - [x] Filter sidebar with dropdowns (company, status, location)
+     - [x] Hide inactive job statuses (Rejected, Withdrawn, No Response) by default from main screen
+     - [x] Display filtered count in applications counter (shows "X of Y applications")
      - [ ] Add option to filter by location in the search bar
-     - [ ] Display filtered count in applications counter (Issue #8)
    - [x] **Forms & Input**
      - [x] Add job form (separate page at /add-job with all fields)
      - [x] Vertically expandable text fields for description and notes
@@ -385,4 +386,25 @@ This provides:
 - `/add-job` - Add new job application form (wired to database)
 - `/job/[id]` - Job detail page with note history, status editing, add note with template selector, and delete job functionality
 - `/templates` - Templates Management page for creating, editing, searching, and deleting note templates
+
+---
+
+# **Roadmap**
+
+See [ROADMAP.md](ROADMAP.md) for detailed upcoming features and implementation plan.
+
+**Phase 1: Complete ✅**
+- ✅ Reset edit mode on page exit
+- ✅ Smart cancel with confirmation dialog
+- ✅ Auto-populate application date to today
+
+**Phase 2: Complete ✅**
+- ✅ Sort jobs by application date (newest first)
+- ✅ Hide inactive job statuses by default
+- ✅ Filter-aware application counter (shows "X of Y")
+- ✅ Remove notes field from job creation (commented out for potential future re-add)
+
+**Coming Soon:**
+- Location autocomplete with type-ahead
+- Full job editing capability
 

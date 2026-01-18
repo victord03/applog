@@ -173,28 +173,73 @@ High-value improvements with minimal implementation effort.
 
 Valuable features requiring moderate implementation effort.
 
-### 8. Location Autocomplete (Type-ahead)
+### 8. Location Dropdown with "Other" Option
 
-**Requirement:** Start typing location → see suggestions from existing locations in database → can still type custom value for new locations.
+**Requirement:** Eliminate typing for the 5 most common locations (Geneva, Lausanne, Nyon, Gland, Bern) while allowing custom text input for edge cases.
 
-**Implementation:**
-1. Add computed property: `@rx.var def unique_locations(self) -> List[str]` that extracts all unique location values from `self.jobs`
-2. Use Reflex autocomplete pattern with `rx.input()` + suggestions list
-3. Allow free text input for locations not in list
+**UX Decision:** Dropdown with hardcoded list + "Other" option that reveals text input field below when selected.
 
-**Target locations (most common):**
-- Geneva
-- Lausanne
-- Nyon
+**Rationale:**
+- 95% of applications go to the same 5 regions → zero typing optimization
+- Hardcoded list prevents typo accumulation and ensures consistent data
+- "Other" option handles rare edge cases without restricting flexibility
+- Conditional text input uses proven `rx.cond()` pattern from codebase
+
+**Implementation Steps:**
+
+1. **Update State class** (`applog/applog.py`)
+   - Add state variable: `form_location_is_other: bool = False` (tracks if "Other" is selected)
+   - Keep existing: `form_location: str = ""` (stores final location value)
+   - Update `clear_form()` method to reset both location-related state variables
+
+2. **Create location selection handler** (`applog/applog.py`)
+   - Add method: `handle_location_change(value: str)`
+     - If value == "Other": set `form_location_is_other = True`, clear `form_location`
+     - Else: set `form_location = value`, set `form_location_is_other = False`
+
+3. **Replace location input component** (`applog/components/jobs/add_job.py`)
+   - Modify `_optional_field_location()` function
+   - Replace `rx.input()` with `rx.select()` containing hardcoded options:
+     - `["Geneva", "Lausanne", "Nyon", "Gland", "Bern", "Other"]`
+   - Wire to new handler: `on_change=state.handle_location_change`
+   - Add conditional text input below using `rx.cond(state.form_location_is_other, ...)`
+   - Text input should update `state.form_location` directly
+
+4. **Pattern References (already in codebase):**
+   - **Dropdown pattern**: See `_optional_field_status()` in `add_job.py:122-149`
+   - **Conditional rendering**: See `_optional_field_message_display()` in `add_job.py:229-251`
+   - **State handler pattern**: See existing `set_*` methods in State class
 
 **Files to modify:**
-- `applog/applog.py` (add `unique_locations` computed var to State)
-- `applog/components/jobs/add_job.py` (replace plain input with autocomplete component)
+- `applog/applog.py` (State class: add `form_location_is_other` state, add `handle_location_change()` handler, update `clear_form()`)
+- `applog/components/jobs/add_job.py` (replace `_optional_field_location()` implementation)
 
-**Effort:** 30-45 minutes
-**Complexity:** MEDIUM
+**Testing checklist:**
+- [ ] Dropdown displays all 5 locations + "Other"
+- [ ] Selecting a preset location (e.g., "Geneva") sets `form_location` correctly
+- [ ] Selecting "Other" reveals text input field below
+- [ ] Typing in "Other" text input updates `form_location`
+- [ ] Form submission saves correct location to database
+- [ ] Switching from "Other" back to preset hides text input
+- [ ] `clear_form()` resets dropdown and "Other" state
 
-**Future enhancement:** Could add similar autocomplete for job_title and company_name fields.
+**Effort:** 15-20 minutes
+**Complexity:** LOW-MEDIUM
+**Status:** ✅ COMPLETED
+
+**Implementation Details:**
+- Added `form_location_is_other: bool` state variable to track "Other" selection
+- Created `handle_location_change()` handler to manage dropdown selection logic
+- Updated `clear_form()` to reset location-related state variables
+- Replaced `rx.input()` with `rx.select()` dropdown containing 5 preset locations + "Other"
+- Added conditional `rx.input()` that appears only when "Other" is selected
+- Added validation to prevent submission if "Other" selected but no custom location entered
+
+**Files Modified:**
+- `applog/applog.py` (lines 56, 277-280, 322, 328-339)
+- `applog/components/jobs/add_job.py` (lines 102-142)
+
+**Future enhancement:** Could add similar dropdown for job_title and company_name fields if repetitive data patterns emerge.
 
 ---
 
@@ -246,8 +291,8 @@ Implement all quick wins and bug fixes (items 1-7). Dramatically improves UX wit
 - ✅ Phase 1 complete (items 1-3)
 - ✅ Phase 2 complete (items 4-7)
 
-**Session 2** (~30-45 minutes): **Phase 3**
-Implement location autocomplete (item 8). Focused session on single feature.
+**Session 2** (~30-45 minutes): **Phase 3** ✅ COMPLETED
+Implement location dropdown with "Other" option (item 8). Focused session on single feature.
 
 **Session 3** (~1-2 hours): **Phase 4**
 Implement full job editing (item 9). Larger feature requiring focused time.
@@ -275,5 +320,5 @@ Items from original README that were deferred:
 
 ---
 
-**Last Updated:** 2026-01-11
-**Status:** Phase 1 Complete ✅ | Phase 2 Complete ✅
+**Last Updated:** 2026-01-18
+**Status:** Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 Complete ✅

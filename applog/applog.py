@@ -53,11 +53,11 @@ class State(rx.State):
     form_job_title: str = ""
     form_job_url: str = ""
     form_location: str = ""
+    form_location_is_other: bool = False  # Tracks if "Other" is selected in location dropdown
     form_description: str = ""
     form_status: str = "Applied"
     form_application_date: str
     form_salary_range: str = ""
-    # form_notes: str = ""
 
     # Job detail page state
     selected_job_id: int = 0
@@ -271,7 +271,13 @@ class State(rx.State):
         if not self.form_company_name or not self.form_job_url or not self.form_job_title:
             self.form_message = "Please fill in all required fields (Company, Title, URL)"
             self.form_message_type = "error"
-            return  # Don't proceed
+            return None # Don't proceed
+
+        # 1b. Validate location if "Other" is selected
+        if self.form_location_is_other and not self.form_location:
+            self.form_message = "Please enter a custom location or select a preset location"
+            self.form_message_type = "error"
+            return None
 
         # 2. Clear any previous messages
         self.form_message = ""
@@ -292,7 +298,6 @@ class State(rx.State):
                     "location": self.form_location,
                     "description": self.form_description,
                     "salary_range": self.form_salary_range,
-                    # "notes": self.form_notes  Removed during refactoring. Keeping it for a while
                 }
             )
 
@@ -311,7 +316,7 @@ class State(rx.State):
 
         finally:
 
-            # 7. Always close the session
+            # 7. Always closes the session
             db_session.close()
 
     def clear_form(self) -> None:
@@ -320,11 +325,24 @@ class State(rx.State):
         self.form_job_title = ""
         self.form_job_url = ""
         self.form_location = ""
+        self.form_location_is_other = False
         self.form_description = ""
         self.form_status = "Applied"
         self.form_application_date = datetime.today().strftime("%Y-%m-%d")
         self.form_salary_range = ""
-        # self.form_notes = ""  Removed during refactoring. Keeping it for a while
+
+    def handle_location_change(self, value: str) -> None:
+        """Handle location dropdown selection change.
+
+        If 'Other' is selected, enable custom text input mode.
+        Otherwise, set location to selected preset value.
+        """
+        if value == "Other":
+            self.form_location_is_other = True
+            self.form_location = ""  # Clear location so user must enter custom value
+        else:
+            self.form_location_is_other = False
+            self.form_location = value  # Set to selected preset location
 
     def handle_cancel_job_creation(self) -> None:
         """Handle cancel button click - show confirmation if form has data."""
@@ -336,7 +354,6 @@ class State(rx.State):
             self.form_location,
             self.form_description,
             self.form_salary_range,
-            # self.form_notes, Removed during refactoring. Keeping it for a while.
         ])
 
         if has_data:
@@ -439,7 +456,7 @@ class State(rx.State):
         finally:
             db.close()
 
-    # Template management handlers
+    # TEMPLATE MANAGEMENT HANDLERS
     def load_templates_from_db(self):
         """Load all templates from database."""
         db = SessionLocal()

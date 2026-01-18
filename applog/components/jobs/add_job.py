@@ -101,18 +101,40 @@ def _section_required_fields(state: rx.State):
 
 def _optional_field_location(state: rx.State):
     """
-    📍 Renders Location input field (optional).
-    Visual: Label "Location" + text input with placeholder
+    📍 Renders Location dropdown field with "Other" option (optional).
+    Visual: Label "Location" + select dropdown with preset locations + conditional text input for custom location
     """
     return rx.vstack(
-
         rx.text("Location", weight="bold", size="2"),
-        rx.input(
-            placeholder="e.g., San Francisco, CA or Remote",
-            value=state.form_location,
-            on_change=state.set_form_location,
+        rx.select(
+            [
+                "Geneva",
+                "Lausanne",
+                "Nyon",
+                "Gland",
+                "Bern",
+                "Other",
+            ],
+            placeholder="Select a location...",
+            value=rx.cond(
+                state.form_location_is_other,
+                "Other",
+                state.form_location,
+            ),
+            on_change=state.handle_location_change,
             width="100%",
             size="3",
+        ),
+        # Conditional text input - only shown when "Other" is selected
+        rx.cond(
+            state.form_location_is_other,
+            rx.input(
+                placeholder="Enter custom location...",
+                value=state.form_location,
+                on_change=state.set_form_location,
+                width="100%",
+                size="3",
+            ),
         ),
         spacing="2",
         align_items="start",
@@ -293,8 +315,6 @@ def _section_optional_fields(state: rx.State):
         _optional_field_salary_range(state),
 
         _optional_field_description(state),
-
-        # _optional_field_notes(state),  removed during refactoring. Keeping it in case I want to restore it.
 
         _optional_field_message_display(state),
 

@@ -20,6 +20,7 @@
      - [x] Hide inactive job statuses (Rejected, Withdrawn, No Response) by default from main screen
      - [x] Display filtered count in applications counter (shows "X of Y applications")
      - [ ] Add option to filter by location in the search bar
+     - [x] Location dropdown with "Other" option for zero-typing job creation (Phase 3 - ROADMAP.md ✅)
    - [x] **Forms & Input**
      - [x] Add job form (separate page at /add-job with all fields)
      - [x] Vertically expandable text fields for description and notes
@@ -29,10 +30,6 @@
      - [ ] Edit/delete buttons on job cards
      - [ ] Optional field to store apartment offer links (multiple links with '+ Add link' UI)
      - [ ] Edit job details functionality (Issue #3)
-     - [ ] Auto-populate application date to today by default (Issue #4)
-     - [ ] Reset edit mode when exiting job details page (Issue #5)
-     - [ ] Add "Clear Fields" button in job creation form (Issue #6)
-     - [ ] Auto-suggest/auto-fill for location, job title, and company fields (Issue #7)
    - [x] **Note History & Timeline**
      - [x] Vertical timeline display showing timestamped notes
      - [x] Notes sorted in reverse chronological order (newest first)
@@ -404,7 +401,9 @@ See [ROADMAP.md](ROADMAP.md) for detailed upcoming features and implementation p
 - ✅ Filter-aware application counter (shows "X of Y")
 - ✅ Remove notes field from job creation (commented out for potential future re-add)
 
+**Phase 3: Complete ✅**
+- ✅ Location dropdown with "Other" option (zero-typing for 5 common locations)
+
 **Coming Soon:**
-- Location autocomplete with type-ahead
-- Full job editing capability
+- Full job editing capability (Phase 4)
 
